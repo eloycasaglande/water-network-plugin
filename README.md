@@ -4,7 +4,7 @@ Plugin em C# (.NET Framework 4.8) para o **ZWCAD 2025 Professional** que desenha
 municipais em 3D (DN50 até adutoras DN700), com tubos, curvas, peças especiais e quantitativo
 automático (metragem, peças, parafusos, porcas, juntas).
 
-> **Estado:** em desenvolvimento. A versão atual é a `v35` (pasta `dist\v35`). O código compila,
+> **Estado:** em desenvolvimento. A versão atual é a `v36` (pasta `dist\v35`). O código compila,
 > mas as versões mais novas ainda estão sendo validadas no ZWCAD. As dimensões das peças são
 > **provisórias** (veja [Dados e normas](#dados-e-normas)).
 
@@ -91,7 +91,7 @@ Para não repetir o `NETLOAD` a cada sessão, pode-se colocar a linha abaixo num
 carregado na inicialização do ZWCAD (por exemplo `acaddoc.lsp` na pasta de suporte):
 
 ```lisp
-(command "_.NETLOAD" "C:/caminho/para/plugin encanamentos/dist/v35/RedesAgua.dll")
+(command "_.NETLOAD" "C:/caminho/para/plugin encanamentos/dist/v36/RedesAgua.dll")
 ```
 
 ## Comandos
@@ -103,6 +103,7 @@ carregado na inicialização do ZWCAD (por exemplo `acaddoc.lsp` na pasta de sup
 | `AGUA_CONTINUAR` | Retoma uma rede existente a partir da **entrada**, da **saída** ou da **derivação** (tê) de uma peça. |
 | `AGUA_ROTULO` | Cria ou edita o rótulo (nome) de uma peça, no plano da vista atual. |
 | `AGUA_QUANT` | Gera o quantitativo (na linha de comando e em arquivo CSV). |
+| `AGUA_IMPRIMIR` | Imprime só a região escolhida por janela (2 cantos), com retrato/paisagem automático e escala ajustada à folha. |
 
 ## Como desenhar uma rede
 
@@ -231,6 +232,7 @@ plugin encanamentos\
     ├── Comandos.cs        AGUA_VISTA, AGUA_REDE, AGUA_CONTINUAR
     ├── PecaDialog.cs      janela de seleção de peça (e menu alternativo)
     ├── Quantitativo.cs    AGUA_QUANT
+    ├── Imprimir.cs        AGUA_IMPRIMIR
     └── Rotulos.cs         AGUA_ROTULO
 src\RedesAgua.AutoCAD\       projeto do AutoCAD 2025 (.NET 8): compila os mesmos .cs de src\RedesAgua
 ```
