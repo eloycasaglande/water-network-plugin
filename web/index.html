@@ -35,6 +35,8 @@ button.tog.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 #chips button{padding:2px 8px;font:12px system-ui}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:880px;width:94vw;max-height:88vh;padding:14px}
 dialog#dlgPeca{max-width:420px}
+dialog#dlgAjuda td:first-child{white-space:nowrap;vertical-align:top;padding-right:14px}
+code{background:var(--bg);padding:0 4px;border-radius:3px}
 dialog::backdrop{background:rgba(0,0,0,.4)}
 label{display:block;font-size:12px;color:var(--mut);margin:6px 0 2px}
 select,input[type=number]{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
@@ -72,6 +74,8 @@ h3{margin:10px 0 0;font-size:14px}
   <span class="sep"></span>
   <button class="tog" id="orto" title="F8">Orto</button>
   <button class="tog" id="snap" title="F3">Snap</button>
+  <span class="sep"></span>
+  <button id="ajuda" title="Ajuda: comandos e atalhos" aria-label="Ajuda" style="font-weight:700;border-radius:50%;width:30px;height:30px;padding:0">?</button>
   <input type="file" id="file" accept=".json,application/json" class="hide">
 </div>
 <div id="main">
@@ -88,6 +92,41 @@ h3{margin:10px 0 0;font-size:14px}
 
 <dialog id="dlg"><div id="dlgBody"></div>
   <div class="btns"><button class="pri" id="csv">Baixar CSV</button><button id="fechar">Fechar</button></div>
+</dialog>
+
+<dialog id="dlgAjuda">
+  <h2 style="margin:0 0 4px;font-size:17px">Ajuda — comandos</h2>
+  <div style="color:var(--mut);font-size:12px">Digite o comando na linha de baixo (ou clique no botão da barra). Enter sem texto repete o último comando.</div>
+  <h3>Comandos</h3>
+  <table>
+    <tr><td><b>REDE</b></td><td>Desenha uma rede nova: pede material, DN e ponto inicial, e depois pede o próximo ponto ou distância. Opções: <i>Reta</i> (segue em frente, pede só o comprimento), <i>Curva</i> (ângulo, direção e comprimento seguinte), <i>Peça</i> (abre a janela de peças), <i>Desfazer</i> (remove o último elemento) e <i>Fim</i>.</td></tr>
+    <tr><td><b>CONTINUAR</b></td><td>Retoma uma rede existente: clique num tubo ou peça e escolha continuar pela <i>Entrada</i>, <i>Saída</i> ou <i>Derivação</i> (tê).</td></tr>
+    <tr><td><b>QUANT</b></td><td>Mostra o quantitativo (tubos em metros, peças, parafusos, porcas, arruelas, juntas e avisos de ligação incompatível) e permite baixar em CSV.</td></tr>
+    <tr><td><b>IMPRIMIR</b></td><td>Clique dois cantos da área a imprimir e escolha A4 ou A3. A página escolhe retrato ou paisagem pela proporção da janela e ajusta à folha.</td></tr>
+    <tr><td><b>DESFAZER</b> (ou <b>U</b>)</td><td>Remove o último elemento criado.</td></tr>
+    <tr><td><b>LIMPAR</b></td><td>Apaga toda a rede (pede confirmação).</td></tr>
+    <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td>Salva o projeto em um arquivo .json ou abre um salvo antes.</td></tr>
+    <tr><td><b>VISTA</b>, <b>PLANTA</b>, <b>FRENTE</b>, <b>ZOOM</b></td><td>Vista isométrica, vista de cima, vista de frente e enquadrar tudo.</td></tr>
+  </table>
+  <h3>Durante a rede</h3>
+  <table>
+    <tr><td>Clique no desenho</td><td>Define o próximo ponto. Se a direção mudar, pergunta o ângulo da curva.</td></tr>
+    <tr><td>Digitar um número</td><td>Distância em metros, na direção em que o cursor está apontando.</td></tr>
+    <tr><td>Digitar <code>x,y,z</code></td><td>Ponto por coordenadas (ex.: <code>0,0,0</code>).</td></tr>
+    <tr><td>Enter / botão direito</td><td>Aceita o padrão (no laço da rede, termina com <i>Fim</i>).</td></tr>
+    <tr><td>Esc</td><td>Cancela o comando.</td></tr>
+    <tr><td>Ctrl+Z</td><td>Atalho para <i>Desfazer</i> dentro da rede.</td></tr>
+    <tr><td>F8 / botão Orto</td><td>Trava o cursor nos eixos X, Y ou Z.</td></tr>
+    <tr><td>F3 / botão Snap</td><td>Atrai o cursor para as extremidades das peças.</td></tr>
+  </table>
+  <h3>Mouse na vista</h3>
+  <table>
+    <tr><td>Botão esquerdo</td><td>Clica pontos e seleciona peças.</td></tr>
+    <tr><td>Botão direito + arrastar</td><td>Gira a vista (órbita).</td></tr>
+    <tr><td>Botão do meio + arrastar</td><td>Move a vista (pan).</td></tr>
+    <tr><td>Roda</td><td>Zoom.</td></tr>
+  </table>
+  <div class="btns"><button class="pri" id="ajudaFechar">Fechar</button></div>
 </dialog>
 
 <dialog id="dlgPeca">
@@ -849,6 +888,8 @@ $('file').onchange=async ev=>{
   ev.target.value='';
 };
 $('fechar').onclick=()=>$('dlg').close();
+$('ajuda').onclick=()=>{$('dlgAjuda').showModal();$('dlgAjuda').scrollTop=0};
+$('ajudaFechar').onclick=()=>$('dlgAjuda').close();
 $('csv').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ultimoCsv],{type:'text/csv;charset=utf-8'}));a.download='Quantitativo_RedesAgua.csv';a.click()};
 
 /* ---------- Inicio ---------- */
