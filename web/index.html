@@ -34,7 +34,20 @@ button.tog.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 #chips{display:flex;gap:4px;flex-wrap:wrap}
 #chips button{padding:2px 8px;font:12px system-ui}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:880px;width:94vw;max-height:88vh;padding:14px}
-dialog#dlgPeca{max-width:420px}
+dialog#dlgPeca{max-width:720px}
+#hov{position:absolute;pointer-events:none;z-index:6;background:var(--panel);border:1px solid var(--acc);border-radius:6px;padding:6px 10px;font-size:12px;line-height:1.45;box-shadow:0 2px 10px rgba(0,0,0,.2);max-width:360px}
+.pcgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:700px){.pcgrid{grid-template-columns:1fr}}
+fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 8px;padding:4px 10px 8px}
+legend{font-weight:600;font-size:12px;padding:0 6px}
+.fr{display:grid;grid-template-columns:130px 1fr;gap:6px;align-items:center;margin-top:6px}
+.fr label{margin:0}
+label.off,.off{opacity:.45}
+select:disabled,input:disabled{opacity:.55}
+#prevBox{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
+#prev{display:block;width:100%;height:190px;cursor:grab}
+#prevBox .hint{position:absolute;left:6px;bottom:4px;font-size:10px;color:#888;pointer-events:none}
+#pcDesc{color:var(--mut);font-size:12px;margin-top:6px;min-height:34px}
 dialog#dlgAjuda td:first-child{white-space:nowrap;vertical-align:top;padding-right:14px}
 code{background:var(--bg);padding:0 4px;border-radius:3px}
 dialog::backdrop{background:rgba(0,0,0,.4)}
@@ -64,8 +77,10 @@ h3{margin:10px 0 0;font-size:14px}
   <span class="sep"></span>
   <button data-cmd="DESFAZER">Desfazer</button>
   <button data-cmd="LIMPAR">Limpar</button>
-  <button data-cmd="SALVAR">Salvar</button>
-  <button data-cmd="ABRIR">Abrir</button>
+  <button data-cmd="SALVAR" title="Salva neste navegador">Salvar</button>
+  <button data-cmd="ABRIR" title="Abre o que foi salvo neste navegador">Abrir</button>
+  <button data-cmd="EXPORTAR" title="Baixa um arquivo .json">Exportar</button>
+  <button data-cmd="IMPORTAR" title="Abre um arquivo .json">Importar</button>
   <span class="sep"></span>
   <button data-cmd="VISTA">Iso</button>
   <button data-cmd="PLANTA">Planta</button>
@@ -81,6 +96,7 @@ h3{margin:10px 0 0;font-size:14px}
 <div id="main">
   <div id="view"></div>
   <div id="tip" class="hide"></div>
+  <div id="hov" class="hide"></div>
   <div id="selrect" class="hide"></div>
   <div id="coord"></div>
 </div>
@@ -96,7 +112,7 @@ h3{margin:10px 0 0;font-size:14px}
 
 <dialog id="dlgAjuda">
   <h2 style="margin:0 0 4px;font-size:17px">Ajuda — comandos</h2>
-  <div style="color:var(--mut);font-size:12px">Digite o comando na linha de baixo (ou clique no botão da barra). Enter sem texto repete o último comando.</div>
+  <div style="color:var(--mut);font-size:12px">Todas as medidas são em <b>centímetros (cm)</b>, exceto o DN e os comprimentos de peças, em mm. Digite o comando na linha de baixo (ou clique no botão da barra). Enter sem texto repete o último comando.</div>
   <h3>Comandos</h3>
   <table>
     <tr><td><b>REDE</b></td><td>Desenha uma rede nova: pede material, DN e ponto inicial, e depois pede o próximo ponto ou distância. Opções: <i>Reta</i> (segue em frente, pede só o comprimento), <i>Curva</i> (ângulo, direção e comprimento seguinte), <i>Peça</i> (abre a janela de peças), <i>Desfazer</i> (remove o último elemento) e <i>Fim</i>.</td></tr>
@@ -105,13 +121,14 @@ h3{margin:10px 0 0;font-size:14px}
     <tr><td><b>IMPRIMIR</b></td><td>Clique dois cantos da área a imprimir e escolha A4 ou A3. A página escolhe retrato ou paisagem pela proporção da janela e ajusta à folha.</td></tr>
     <tr><td><b>DESFAZER</b> (ou <b>U</b>)</td><td>Remove o último elemento criado.</td></tr>
     <tr><td><b>LIMPAR</b></td><td>Apaga toda a rede (pede confirmação).</td></tr>
-    <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td>Salva o projeto em um arquivo .json ou abre um salvo antes.</td></tr>
+    <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td>Salva a rede neste navegador (fica guardada mesmo fechando a página) e abre de novo o que foi salvo. A rede também é guardada automaticamente a cada alteração e volta quando você reabre a página.</td></tr>
+    <tr><td><b>EXPORTAR</b> / <b>IMPORTAR</b></td><td>Baixa a rede em um arquivo .json (para guardar ou enviar) e abre um arquivo .json.</td></tr>
     <tr><td><b>VISTA</b>, <b>PLANTA</b>, <b>FRENTE</b>, <b>ZOOM</b></td><td>Vista isométrica, vista de cima, vista de frente e enquadrar tudo.</td></tr>
   </table>
   <h3>Durante a rede</h3>
   <table>
     <tr><td>Clique no desenho</td><td>Define o próximo ponto. Se a direção mudar, pergunta o ângulo da curva.</td></tr>
-    <tr><td>Digitar um número</td><td>Distância em metros, na direção em que o cursor está apontando.</td></tr>
+    <tr><td>Digitar um número</td><td>Distância em centímetros, na direção em que o cursor está apontando.</td></tr>
     <tr><td>Digitar <code>x,y,z</code></td><td>Ponto por coordenadas (ex.: <code>0,0,0</code>).</td></tr>
     <tr><td>Enter / botão direito</td><td>Aceita o padrão (no laço da rede, termina com <i>Fim</i>).</td></tr>
     <tr><td>Esc</td><td>Cancela o comando.</td></tr>
@@ -122,6 +139,7 @@ h3{margin:10px 0 0;font-size:14px}
   <h3>Mouse na vista</h3>
   <table>
     <tr><td>Botão esquerdo</td><td>Clica pontos e seleciona peças.</td></tr>
+    <tr><td>Passar o mouse</td><td>Destaca a peça e mostra nome, DN, extremidades e comprimento.</td></tr>
     <tr><td>Botão direito + arrastar</td><td>Gira a vista (órbita).</td></tr>
     <tr><td>Botão do meio + arrastar</td><td>Move a vista (pan).</td></tr>
     <tr><td>Roda</td><td>Zoom.</td></tr>
@@ -130,21 +148,37 @@ h3{margin:10px 0 0;font-size:14px}
 </dialog>
 
 <dialog id="dlgPeca">
-  <h3 style="margin:0 0 4px">Peça</h3><div id="dlgMat" style="color:var(--mut);font-size:12px"></div>
-  <label>Tipo</label><select id="tipo"></select>
-  <div class="row"><div><label>DN</label><select id="dn"></select></div><div id="fDn2"><label id="lDn2">DN de saída</label><select id="dn2"></select></div></div>
-  <div class="row">
-    <div id="fAng"><label>Ângulo</label><select id="ang"><option>90</option><option>45</option><option>22.5</option><option>11.25</option></select></div>
-    <div id="fDir"><label id="lDir">Direção</label><select id="dir"><option>Direita</option><option>Esquerda</option><option>Cima</option><option>Baixo</option></select></div>
-    <div id="fLen"><label>Comprimento (mm)</label><input type="number" id="len" min="20" step="10"></div>
-  </div>
-  <div class="row">
-    <div id="fIn"><label>Entrada</label><select id="eIn"></select></div>
-    <div id="fOut"><label>Saída</label><select id="eOut"></select></div>
-    <div id="fBr"><label>Derivação</label><select id="eBr"></select></div>
+  <div id="pcHead" style="font-weight:700;margin-bottom:8px"></div>
+  <div class="pcgrid">
+    <div>
+      <fieldset><legend>Peça</legend>
+        <div class="fr"><label for="tipo">Peça</label><select id="tipo"></select></div>
+        <div class="fr"><label for="dn">DN da peça</label><select id="dn"></select></div>
+      </fieldset>
+      <fieldset><legend>Extremidades</legend>
+        <div class="fr"><label for="eIn">Entrada</label><select id="eIn"></select></div>
+        <div class="fr"><label for="eOut">Saída</label><select id="eOut"></select></div>
+        <div class="fr"><label for="eBr">Derivação</label><select id="eBr"></select></div>
+      </fieldset>
+      <fieldset><legend>Geometria</legend>
+        <div class="fr"><label for="ang">Ângulo (graus)</label><select id="ang"></select></div>
+        <div class="fr"><label for="inv">Redução</label><label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" id="inv"> Inverter (aumento)</label></div>
+        <div class="fr"><label for="len">Comprimento (mm)</label><input type="number" id="len" min="100" max="6000" step="50" value="300"></div>
+      </fieldset>
+    </div>
+    <div>
+      <fieldset><legend>Derivação / saída</legend>
+        <div class="fr"><label for="dn2" id="lDn2">DN derivação / saída</label><select id="dn2"></select></div>
+        <div class="fr"><label for="dir" id="lDir">Direção</label><select id="dir"></select></div>
+        <div class="fr"><label for="dn3">Redução na derivação</label><select id="dn3"></select></div>
+        <div class="fr"><label for="brOut">Extremidade da redução</label><select id="brOut"></select></div>
+      </fieldset>
+      <div id="prevBox"><canvas id="prev"></canvas><span class="hint">Arraste para girar · roda: zoom · duplo clique: restaurar</span></div>
+      <div id="pcDesc"></div>
+    </div>
   </div>
   <div id="pecaErro"></div>
-  <div class="btns"><button class="pri" id="pecaOk">OK</button><button id="pecaCancel">Cancelar</button></div>
+  <div class="btns" style="justify-content:flex-end"><button class="pri" id="pecaOk">OK</button><button id="pecaCancel">Cancelar</button></div>
 </dialog>
 
 <script type="module">
@@ -152,13 +186,15 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 
 const $ = id => document.getElementById(id);
-const K = 0.001; // mm -> m (a cena e em metros, Z para cima)
 
 /* ---------- Catalogo (mm) - provisorio, igual ao plugin do ZWCAD ---------- */
+// A cena e em CENTIMETROS (1 unidade = 1 cm, Z para cima). Mm = 1 mm em unidades da cena.
+const Mm = 0.1;
 const DNs=[50,65,80,100,125,150,200,250,300,350,400,450,500,600,700];
 const T={
   De:[66,82,98,118,144,170,222,274,326,378,429,480,532,635,738],
   FlOD:[165,185,200,220,250,285,340,395,445,505,565,615,670,780,895],
+  FlPCD:[125,145,160,180,210,240,295,350,400,460,515,565,620,725,840],
   FlT:[19,19,19,19,19,19,20,22,24.5,26,28,28,28.5,31.5,35],
   ParN:[4,4,8,8,8,8,8,12,12,16,16,20,20,20,24],
   ParM:[16,16,16,16,16,20,20,20,20,20,24,24,24,27,27],
@@ -168,44 +204,78 @@ const T={
 const PARAF=[40,45,50,55,60,65,70,75,80,90,100,110,120,130,140,150,160,180,200];
 const ix=dn=>{let b=0;for(let i=1;i<DNs.length;i++)if(Math.abs(DNs[i]-dn)<Math.abs(DNs[b]-dn))b=i;return b};
 const Cat={
-  de:dn=>T.De[ix(dn)], flOD:dn=>T.FlOD[ix(dn)], flT:dn=>T.FlT[ix(dn)],
+  de:dn=>T.De[ix(dn)], flOD:dn=>T.FlOD[ix(dn)], flPCD:dn=>T.FlPCD[ix(dn)], flT:dn=>T.FlT[ix(dn)],
   parN:dn=>T.ParN[ix(dn)], parM:dn=>T.ParM[ix(dn)], regL:dn=>T.RegL[ix(dn)],
   jmN:dn=>T.JmN[ix(dn)], jmM:dn=>T.JmM[ix(dn)],
+  furo(dn){const m=T.ParM[ix(dn)];return m<=16?18:(m<=20?22:(m<=24?26:30))},
   bolsa:dn=>Math.round(80+0.4*dn),
   raioCurva:dn=>Math.max(1.5*dn,100), raioJoelho:dn=>Math.max(dn,60),
   jdLen:dn=>Math.round((150+0.4*dn)/10)*10,
+  jdMin:dn=>2*T.FlT[ix(dn)]+100,
   parLen(dn){const d=this.parM(dn),n=2*this.flT(dn)+3+0.8*d+0.2*d+0.6*d;return PARAF.find(c=>c>=n)||Math.ceil(n/10)*10},
   jmParLen(dn){const d=this.jmM(dn),n=20+22+0.8*d+15;return PARAF.find(c=>c>=n)||Math.ceil(n/10)*10}
 };
-const rM=dn=>Cat.de(dn)/2*K;
+const rExt=dn=>Cat.de(dn)/2*Mm;
+const rInt=dn=>{const r=rExt(dn);return r-Math.max(4*Mm,r*0.1)};
 
-/* ---------- Pecas ---------- */
-const TODAS=['PONTA','BOLSA','FLANGE','JM'];
-const END_NOME={PONTA:'Ponta',BOLSA:'Bolsa',FLANGE:'Flange',JM:'Junta mecânica'};
-const BF=['FLANGE','BOLSA'];
-// in/out/br: opcoes de extremidade (1 opcao = fixa); ausente = sem essa extremidade; def = padrao
-const PECAS={
-  CURVA:{nome:'Curva',ang:1,dir:1,in:TODAS,out:TODAS,def:['BOLSA','BOLSA']},
-  JOELHO:{nome:'Joelho',ang:1,dir:1,in:TODAS,out:TODAS,def:['BOLSA','BOLSA']},
-  RETA:{nome:'Peça reta',len:1,in:TODAS,out:TODAS,def:['FLANGE','FLANGE'],L:()=>500},
-  CARRETEL:{nome:'Carretel flangeado',len:1,in:['FLANGE'],out:['FLANGE'],L:()=>500},
-  LUVA:{nome:'Luva (bolsa-bolsa)',len:1,in:['BOLSA'],out:['BOLSA'],L:dn=>2*Cat.bolsa(dn)+20},
-  JM:{nome:'Junta mecânica (luva JM)',len:1,in:['JM'],out:['JM'],L:dn=>220+0.2*dn},
-  LUVA_LR:{nome:'Luva de redução (LR)',dn2:1,len:1,in:['BOLSA'],out:['BOLSA'],L:dn=>2*Cat.bolsa(dn)+30},
-  REDUCAO:{nome:'Redução / aumento',dn2:1,len:1,in:TODAS,out:TODAS,def:['FLANGE','FLANGE'],L:()=>300},
-  TE:{nome:'Tê',dn2:1,dir:1,in:TODAS,out:TODAS,br:TODAS,def:['BOLSA','BOLSA','BOLSA'],L:dn=>300+dn},
-  REG_GAVETA:{nome:'Registro de gaveta',in:BF,out:BF,sync:1,def:['FLANGE','FLANGE'],L:dn=>Cat.regL(dn)},
-  BORBOLETA:{nome:'Registro borboleta',in:BF,out:BF,sync:1,def:['FLANGE','FLANGE'],L:dn=>Cat.regL(dn)*0.7},
-  RETENCAO:{nome:'Válvula de retenção',in:BF,out:BF,sync:1,def:['FLANGE','FLANGE'],L:dn=>Cat.regL(dn)*1.3},
-  VRP:{nome:'Válvula redutora de pressão (VRP)',in:['FLANGE'],out:['FLANGE'],L:dn=>Cat.regL(dn)*1.8},
-  VENTOSA:{nome:'Ventosa',in:BF,def:['FLANGE'],L:dn=>400+dn},
-  JD:{nome:'Junta de desmontagem',len:1,in:['FLANGE'],out:['FLANGE'],L:dn=>Cat.jdLen(dn)},
-  PONTA_FLANGE:{nome:'Ponta-flange',len:1,in:['FLANGE'],out:['PONTA'],L:()=>300},
-  BOLSA_FLANGE:{nome:'Bolsa-flange',len:1,in:['BOLSA'],out:['FLANGE'],L:dn=>Cat.bolsa(dn)+200},
-  CAP:{nome:'Cap / flange cego',in:['BOLSA','JM','FLANGE'],def:['BOLSA'],L:dn=>Cat.bolsa(dn)+30},
-  FLANGE_ANEL:{nome:'Flange (anel)',in:['FLANGE'],L:dn=>Cat.flT(dn)}
-};
-const nomeEl=e=>e.tipo==='TUBO'?'Tubo':PECAS[e.tipo].nome;
+/* ---------- Extremidades ---------- */
+const END_NOME={PONTA:'Ponta',BOLSA:'Bolsa',FLANGE:'Flange',JM:'Junta mecânica',ELETRO:'Eletrofusão',TERMO:'Termofusão',SOLDA:'Soldada',FECHADA:'Fechada'};
+const END_LISTA=['BOLSA','ELETRO','FLANGE','JM','PONTA','SOLDA','TERMO'];
+const lenJm=dn=>20+22+0.8*Cat.bolsa(dn); // mm
+function lenFim(e,dn){ // mm
+  if(e==='FLANGE') return Cat.flT(dn);
+  if(e==='BOLSA') return Cat.bolsa(dn);
+  if(e==='JM') return lenJm(dn);
+  if(e==='ELETRO') return Math.round(40+0.35*dn);
+  if(e==='TERMO') return Math.max(50,Math.round(0.4*dn));
+  return 0;
+}
+const lenCorpoFim=(e,dn)=>e==='FLANGE'?Cat.flT(dn)*1.9:lenFim(e,dn);
+// ligacao entre a extremidade da origem (a) e a entrada do novo elemento (b); devolve o tipo da junta ou null
+function compat(a,b){
+  if(a==='FLANGE'&&b==='FLANGE') return 'FLANGE';
+  if((a==='BOLSA'&&b==='PONTA')||(a==='PONTA'&&b==='BOLSA')) return 'ELASTICA';
+  if((a==='JM'&&b==='PONTA')||(a==='PONTA'&&b==='JM')) return 'JM';
+  if((a==='ELETRO'&&b==='PONTA')||(a==='PONTA'&&b==='ELETRO')) return 'ELETRO';
+  for(const s of ['TERMO','SOLDA']){
+    if(a===s&&(b===s||b==='PONTA')) return s;
+    if(a==='PONTA'&&b===s) return s;
+  }
+  return null;
+}
+
+/* ---------- Lista de pecas (igual a janela do plugin, em ordem alfabetica) ---------- */
+const LISTA=[
+  {nome:'Bolsa-flange',fam:'RETA',preset:'BOLSAFLANGE',desc:'Peça reta com bolsa numa ponta e flange na outra.'},
+  {nome:'Cap / flange cego',fam:'CAP',preset:'',desc:'Fecha a extremidade da linha (flange cego).'},
+  {nome:'Carretel flangeado',fam:'RETA',preset:'CARRETEL',desc:'Peça curta com flange nas duas pontas.'},
+  {nome:'Curva (11,25° / 22,5° / 45° / 90°)',fam:'CURVA',preset:'',desc:'Mudança de direção com raio: 11,25°, 22,5°, 45° ou 90°.'},
+  {nome:'Curva soldada (alumínio)',fam:'CURVA',preset:'SOLDA',desc:'Curva de alumínio com extremidades soldadas.'},
+  {nome:'Flange (anel)',fam:'FLANGE',preset:'',desc:'Apenas o anel do flange, para acoplar a outra peça.'},
+  {nome:'Joelho (11,25° / 22,5° / 45° / 90°)',fam:'JOELHO',preset:'',desc:'Mudança de direção em canto vivo, sem raio.'},
+  {nome:'Junção Y 45°',fam:'Y',preset:'',desc:'Derivação a 45°; o DN da derivação é livre.'},
+  {nome:'Junta de desmontagem (travada axialmente)',fam:'JD',preset:'',desc:'Flange-flange com comprimento ajustável, travada por tirantes (mais tirantes quanto maior o DN).'},
+  {nome:'Junta mecânica (luva JM)',fam:'JM',preset:'',desc:'Luva de junta mecânica para emendar tubos de ponta.'},
+  {nome:'Luva (bolsa-bolsa)',fam:'LUVA',preset:'',desc:'Luva para unir dois tubos de ponta.'},
+  {nome:'Luva eletrofusão (PEAD)',fam:'LUVA',preset:'ELETRO',desc:'Luva de PEAD unida por eletrofusão.'},
+  {nome:'Luva termofusão (PEAD)',fam:'LUVA',preset:'TERMO',desc:'Luva de PEAD unida por termofusão.'},
+  {nome:'Luva de redução (LR)',fam:'LUVA_LR',preset:'',desc:'Luva que muda o DN de um lado para o outro.'},
+  {nome:'Peça reta (extremidades à escolha)',fam:'RETA',preset:'RETA',desc:'Peça reta com extremidades à escolha e comprimento em mm.'},
+  {nome:'Ponta-flange',fam:'RETA',preset:'PONTAFLANGE',desc:'Flange na entrada e ponta na saída.'},
+  {nome:'Redução / aumento',fam:'REDUCAO',preset:'REDUCAO',desc:'Muda o DN da linha. Marque "Inverter" para fazer aumento.'},
+  {nome:'Registro borboleta',fam:'BORBOLETA',preset:'',desc:'Válvula de fechamento rápido (disco central e alavanca).'},
+  {nome:'Registro gaveta',fam:'REGISTRO',preset:'',desc:'Registro de gaveta com castelo e volante.'},
+  {nome:'Tê (derivação)',fam:'TE',preset:'',desc:'Derivação a 90° (até o DN da linha), com redução opcional.'},
+  {nome:'Válvula de retenção',fam:'RETENCAO',preset:'',desc:'Válvula que impede o retorno da água.'},
+  {nome:'Válvula redutora de pressão (VRP)',fam:'VRP',preset:'',desc:'Reduz e estabiliza a pressão a jusante.'},
+  {nome:'Ventosa',fam:'VENTOSA',preset:'',desc:'Expulsa e admite ar; instalada nos pontos altos.'}
+];
+function nomeDaPeca(fam,preset,eIn){
+  let it=LISTA.find(l=>l.fam===fam&&l.preset===(preset||''));
+  if(!it&&fam==='CURVA'&&eIn==='SOLDA') it=LISTA.find(l=>l.fam==='CURVA'&&l.preset==='SOLDA');
+  if(!it) it=LISTA.find(l=>l.fam===fam);
+  return it?it.nome.replace(/ \(.*\)$/,''):fam;
+}
 
 /* ---------- Cena ---------- */
 const view=$('view');
@@ -214,11 +284,14 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 view.appendChild(renderer.domElement);
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xf4f6f8);
-const camera=new THREE.PerspectiveCamera(35,1,0.05,5000);
+const camera=new THREE.PerspectiveCamera(35,1,1,50000);
 camera.up.set(0,0,1);
-scene.add(new THREE.HemisphereLight(0xffffff,0x8a93a3,1.15));
-const sol=new THREE.DirectionalLight(0xffffff,1.3); sol.position.set(-6,-9,12); scene.add(sol);
-const grid=new THREE.GridHelper(200,200,0x9aa6b2,0xd0d6dd); grid.rotation.x=Math.PI/2; scene.add(grid);
+function luzes(sc){
+  sc.add(new THREE.HemisphereLight(0xffffff,0x8a93a3,1.25));
+  const sol=new THREE.DirectionalLight(0xffffff,1.4); sol.position.set(-6,-9,12); sc.add(sol);
+}
+luzes(scene);
+const grid=new THREE.GridHelper(20000,200,0x9aa6b2,0xd0d6dd); grid.rotation.x=Math.PI/2; scene.add(grid);
 const raiz=new THREE.Group(); scene.add(raiz);
 const controls=new OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;
@@ -226,44 +299,468 @@ function ajusta(){const w=view.clientWidth,h=view.clientHeight;renderer.setSize(
 new ResizeObserver(ajusta).observe(view); ajusta();
 (function loop(){controls.update();renderer.render(scene,camera);requestAnimationFrame(loop)})();
 
+/* ---------- Geometria (primitivas coaxiais ocas e solidos) ---------- */
+const V3=THREE.Vector3;
+const Zax=new V3(0,0,1), Yax=new V3(0,1,0);
 const cache={};
-const mat=c=>cache[c]||(cache[c]=new THREE.MeshStandardMaterial({color:c,roughness:.55,metalness:.25}));
-const COR_MAT={DEFoFo:0x2f6fa8,PVCO:0x6fa8dc,PVC:0xc9b37a,PEAD:0x2b2f36};
-const COR_FL=0x4a5260, COR_REG=0xc0392b, COR_RET=0x2e8b57, COR_VRP=0x1fb5c9, COR_VENT=0xe0b814;
-const Yax=new THREE.Vector3(0,1,0);
-function cil(g,p,d,len,r1,r2,c){
-  const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,Math.max(len,1e-4),32),mat(c));
-  m.position.copy(p).addScaledVector(d,len/2); m.quaternion.setFromUnitVectors(Yax,d); g.add(m); return m;
+const cor3=c=>new THREE.Color(c);
+const mOut=c=>cache['o'+c]||(cache['o'+c]=new THREE.MeshStandardMaterial({color:c,roughness:.5,metalness:.25}));
+const mIn=c=>cache['i'+c]||(cache['i'+c]=new THREE.MeshStandardMaterial({color:cor3(c).multiplyScalar(.5),roughness:.8,metalness:.1,side:THREE.BackSide}));
+const mRing=c=>cache['r'+c]||(cache['r'+c]=new THREE.MeshStandardMaterial({color:c,roughness:.5,metalness:.25,side:THREE.DoubleSide}));
+const Sx=(g,c)=>({g,c,mo:mOut(c),mi:mIn(c),mr:mRing(c)});
+function shell(S,a,b,r1,r2,mat){ // casca aberta de a (raio r1) ate b (raio r2)
+  const d=b.clone().sub(a),len=d.length(); if(len<1e-5) return; d.divideScalar(len);
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,len,36,1,true),mat);
+  m.position.copy(a).addScaledVector(d,len/2); m.quaternion.setFromUnitVectors(Yax,d); S.g.add(m);
 }
-function esfera(g,p,r,c){const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),mat(c));m.position.copy(p);g.add(m)}
-function perp(d){return Math.abs(d.z)>0.99?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1)}
-// recurso visual da extremidade: p = ponto da extremidade, into = sentido para dentro da peca
-function ext(g,p,into,end,dn,cor){
-  const r=rM(dn);
-  if(end==='FLANGE') cil(g,p,into,Cat.flT(dn)*K,Cat.flOD(dn)/2*K,Cat.flOD(dn)/2*K,COR_FL);
-  else if(end==='BOLSA') cil(g,p,into,Cat.bolsa(dn)*K,r*1.14,r*1.14,cor);
-  else if(end==='JM'){cil(g,p,into,0.025,r*1.22,r*1.22,COR_FL);cil(g,p.clone().addScaledVector(into,0.025),into,0.03,r*1.12,r*1.12,cor)}
+function anel(S,p,d,rIn,rOut){
+  if(rOut-rIn<1e-5) return;
+  const m=new THREE.Mesh(new THREE.RingGeometry(rIn,rOut,36),S.mr);
+  m.position.copy(p); m.quaternion.setFromUnitVectors(Zax,d.clone().normalize()); S.g.add(m);
+}
+// tronco oco: raio externo r1->r2, raio interno i1->i2 (i = 0 => macico)
+function oco(S,a,b,r1,r2,i1,i2){
+  const d=b.clone().sub(a); if(d.length()<1e-5) return; d.normalize();
+  shell(S,a,b,r1,r2,S.mo); if(i1>0||i2>0) shell(S,a,b,i1,i2,S.mi);
+  anel(S,a,d,i1,r1); anel(S,b,d,i2,r2);
+}
+const maci=(S,a,b,r1,r2)=>oco(S,a,b,r1,r2===undefined?r1:r2,0,0);
+function caixa(S,c,ex,ey,ez,lx,ly,lz){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(lx,ly,lz),S.mo);
+  m.position.copy(c); m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex,ey,ez)); S.g.add(m);
+}
+// eixo local da peca: Z = sentido do fluxo, X = "esquerda", Y = "cima" (em tubo horizontal)
+class Quadro{
+  constructor(o,z){
+    this.O=o.clone(); this.Z=z.clone().normalize();
+    const ref=Math.abs(this.Z.z)>0.99?new V3(1,0,0):new V3(0,0,1);
+    this.X=new V3().crossVectors(ref,this.Z).normalize(); this.Y=new V3().crossVectors(this.Z,this.X);
+  }
+  W(x,y,z){return this.O.clone().addScaledVector(this.X,x).addScaledVector(this.Y,y).addScaledVector(this.Z,z)}
+}
+const geoCache={};
+function discoFlange(dn,bore){
+  const k='fl'+dn+bore; if(geoCache[k]) return geoCache[k];
+  const ro=Cat.flOD(dn)/2*Mm, pcd=Cat.flPCD(dn)/2*Mm, rf=Cat.furo(dn)/2*Mm, n=Cat.parN(dn), t=Cat.flT(dn)*Mm;
+  const sh=new THREE.Shape(); sh.absarc(0,0,ro,0,Math.PI*2,false);
+  for(let k2=0;k2<n;k2++){const a=Math.PI/n+2*Math.PI*k2/n;const h=new THREE.Path();h.absarc(Math.cos(a)*pcd,Math.sin(a)*pcd,rf,0,Math.PI*2,true);sh.holes.push(h)}
+  if(bore){const h=new THREE.Path();h.absarc(0,0,rInt(dn),0,Math.PI*2,true);sh.holes.push(h)}
+  return geoCache[k]=new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false,curveSegments:32});
+}
+function flange(S,q,z,s,dn,bore){
+  const m=new THREE.Mesh(discoFlange(dn,bore),S.mo);
+  const ex=q.X, ey=s>0?q.Y:q.Y.clone().negate(), ez=s>0?q.Z:q.Z.clone().negate();
+  m.position.copy(q.W(0,0,z)); m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(ex,ey,ez)); S.g.add(m);
+}
+// extremidade no plano z do eixo local; s = +1 se a peca esta em +z, -1 se em -z
+function Fim(S,q,z,s,e,dn,cubo=true){
+  const r=rExt(dn), ri=rInt(dn), W=(x,y,zz)=>q.W(x,y,zz);
+  if(e==='JM'){
+    const gt=20*Mm, ft=22*Mm, bolsa=Cat.bolsa(dn)*0.8*Mm, rb=r*1.28, rF=r*1.62, pcd=r*1.47, n=Cat.jmN(dn);
+    const rp=Cat.jmM(dn)*0.5*Mm, porca=Cat.jmM(dn)*0.8*Mm, rs=r*0.97;
+    oco(S,W(0,0,z),W(0,0,z+s*gt),rF*0.97,rF*0.97,rs,rs);
+    oco(S,W(0,0,z+s*gt),W(0,0,z+s*(gt+ft)),rF,rF,rs,rs);
+    oco(S,W(0,0,z+s*(gt+ft)),W(0,0,z+s*(gt+ft+bolsa)),rb,rb,rs,rs);
+    anel(S,W(0,0,z+s*(gt+ft+bolsa)),q.Z,ri,rs);
+    for(let k=0;k<n;k++){
+      const a=Math.PI/n+2*Math.PI*k/n,x=Math.cos(a)*pcd,y=Math.sin(a)*pcd;
+      maci(S,W(x,y,z-s*porca),W(x,y,z+s*(gt+ft+6*Mm)),rp,rp);
+      maci(S,W(x,y,z-s*porca),W(x,y,z),rp*1.7,rp*1.7);
+    }
+  } else if(e==='BOLSA'){
+    const len=Cat.bolsa(dn)*Mm, rb=r*1.28, rs=r*0.97, an=10*Mm;
+    oco(S,W(0,0,z),W(0,0,z+s*len),rb,rb,rs,rs);
+    oco(S,W(0,0,z),W(0,0,z+s*an),rb*1.07,rb*1.07,rs,rs);
+    anel(S,W(0,0,z+s*len),q.Z,ri,rs);
+  } else if(e==='ELETRO'){
+    const len=lenFim(e,dn)*Mm, rb=r*1.2, rs=r*0.99;
+    oco(S,W(0,0,z),W(0,0,z+s*len),rb,rb,rs,rs);
+    oco(S,W(0,0,z),W(0,0,z+s*8*Mm),rb*1.06,rb*1.06,rs,rs);
+    anel(S,W(0,0,z+s*len),q.Z,ri,rs);
+    const rt=Math.max(5*Mm,r*0.06), ht=Math.max(14*Mm,r*0.22), zt=z+s*len*0.5;
+    maci(S,W(0,rb*0.9,zt),W(0,rb+ht*0.6,zt),rt*1.7,rt*1.7);
+    maci(S,W(0,rb+ht*0.6-Mm,zt),W(0,rb+ht*1.4,zt),rt,rt);
+  } else if(e==='TERMO'){
+    const len=lenFim(e,dn)*Mm, cd=Math.max(2*Mm,r*0.06);
+    oco(S,W(0,0,z),W(0,0,z+s*len),r,r,ri,ri);
+    oco(S,W(0,0,z),W(0,0,z+s*7*Mm),r+cd,r+cd,ri,ri);
+  } else if(e==='SOLDA'){
+    const cd=Math.max(2*Mm,r*0.06);
+    oco(S,W(0,0,z),W(0,0,z+s*6*Mm),r+cd,r+cd,ri,ri);
+  } else if(e==='FLANGE'){
+    const t=Cat.flT(dn)*Mm;
+    flange(S,q,z,s,dn,true);
+    if(cubo) oco(S,W(0,0,z+s*t),W(0,0,z+s*1.9*t),r*1.22,r*1.22,ri,ri);
+  }
+}
+// comeco/fim (em mm) do corpo liso entre as extremidades (bolsa/JM/eletro carregam o corpo)
+const zCorpo=(e,dn)=>(e==='BOLSA'||e==='JM'||e==='ELETRO')?lenFim(e,dn)*Mm:0;
+// corpo oco entre extremidades: casca externa so no trecho liso; furo ri de ponta a ponta
+function corpoOco(S,q,L,ein,eout,dn,rBody){
+  const r=rBody||rExt(dn), ri=rInt(dn);
+  const z0=zCorpo(ein,dn), z1=L-zCorpo(eout,dn);
+  if(z1>z0) oco(S,q.W(0,0,z0),q.W(0,0,z1),r,r,ri,ri);
+}
+// barrilete (corpo de valvula) com transicoes conicas; devolve o raio do barrilete
+function barrilete(S,q,L,ein,eout,dn,fator){
+  const r=rExt(dn),ri=rInt(dn),rb=r*1.12,rBar=r*fator;
+  const zi=lenCorpoFim(ein,dn)*Mm, zf=L-lenCorpoFim(eout,dn)*Mm;
+  if(zf-zi<4*Mm) return rBar;
+  const tr=Math.min(r*0.35,(zf-zi)*0.3);
+  if(tr>2*Mm){
+    oco(S,q.W(0,0,zi),q.W(0,0,zi+tr+Mm),rb,rBar,ri,ri);
+    oco(S,q.W(0,0,zi+tr),q.W(0,0,zf-tr),rBar,rBar,ri,ri);
+    oco(S,q.W(0,0,zf-tr-Mm),q.W(0,0,zf),rBar,rb,ri,ri);
+  } else oco(S,q.W(0,0,zi),q.W(0,0,zf),rBar,rBar,ri,ri);
+  return rBar;
+}
+const larguraMaxima=(L,ein,eout,dn)=>Math.max((L-(lenCorpoFim(ein,dn)+lenCorpoFim(eout,dn))*Mm)*0.5*0.92,10*Mm);
+function sapata(S,cc,up,rBar,r,rMax){
+  const t=Math.max(8*Mm,r*0.14);
+  maci(S,cc.clone().addScaledVector(up,-rBar),cc.clone().addScaledVector(up,-(rBar-t)),Math.min(r*1.15,rMax));
+}
+function flangeCastelo(S,cc,up,rumo,lado,yTopo,rF,tF,r,nb){
+  const P=(y)=>cc.clone().addScaledVector(up,y);
+  maci(S,P(yTopo-tF),P(yTopo),rF);
+  const rpb=Math.max(5*Mm,r*0.07);
+  for(let k=0;k<nb;k++){
+    const a=2*Math.PI*k/nb+Math.PI/nb;
+    const pb=cc.clone().addScaledVector(rumo,Math.cos(a)*rF*0.84).addScaledVector(lado,Math.sin(a)*rF*0.84).addScaledVector(up,yTopo);
+    maci(S,pb.clone().addScaledVector(up,-Mm),pb.clone().addScaledVector(up,rpb*1.8),rpb*1.6);
+  }
+}
+const cimaDe=(d,q)=>Math.abs(d.z)>0.99?q.X.clone():new V3(0,0,1).addScaledVector(d,-d.z).normalize();
+
+// Direcao relativa ao rumo (Z do mundo = cima). Em tubo vertical: Direita=+X, Esquerda=-X, Cima=+Y, Baixo=-Y.
+function alvo(d,key){
+  const Z=new V3(0,0,1);
+  if(Math.abs(d.z)>0.999) return ({Cima:new V3(0,1,0),Baixo:new V3(0,-1,0),Direita:new V3(1,0,0),Esquerda:new V3(-1,0,0)})[key];
+  if(key==='Direita') return new V3().crossVectors(d,Z).normalize();
+  if(key==='Esquerda') return new V3().crossVectors(Z,d).normalize();
+  const s=key==='Cima'?1:-1;
+  return Z.clone().multiplyScalar(s).addScaledVector(d,-s*d.z).normalize();
 }
 class Arco extends THREE.Curve{
-  constructor(p,d,t,R,th){super();this.p=p;this.d=d;this.t=t;this.R=R;this.th=th}
-  getPoint(u,out=new THREE.Vector3()){const a=this.th*u;
-    return out.copy(this.p).addScaledVector(this.d,this.R*Math.sin(a)).addScaledVector(this.t,this.R*(1-Math.cos(a)))}
+  constructor(inicio,d0,pc,R,th){super();this.i=inicio;this.d0=d0;this.pc=pc;this.R=R;this.th=th;this.c=inicio.clone().addScaledVector(pc,R)}
+  getPoint(u,out=new V3()){const a=this.th*u;
+    return out.copy(this.c).addScaledVector(this.pc,-this.R*Math.cos(a)).addScaledVector(this.d0,this.R*Math.sin(a))}
+}
+function arcoOco(S,arc,r,ri,seg){
+  const g1=new THREE.TubeGeometry(arc,seg,r,36,false), g2=new THREE.TubeGeometry(arc,seg,ri,36,false);
+  S.g.add(new THREE.Mesh(g1,S.mo)); S.g.add(new THREE.Mesh(g2,S.mi));
+  const p0=arc.getPoint(0),p1=arc.getPoint(1);
+  const t0=arc.getTangent(0),t1=arc.getTangent(1);
+  anel(S,p0,t0,ri,r); anel(S,p1,t1,ri,r);
+}
+
+/* ---------- Construcao dos elementos ---------- */
+const COR={tubo:0x1d4fd8,aluminio:0xc0c0c0,peca:0x4a5058,reg:0xe02020,ret:0x20b020,vrp:0x20c8e0,vent:0xe8d400,bor:0xff8000,jd:0x909090,solda:0xff8000};
+const MAT_FOFO=m=>(m==='DEFoFo'||m==='PVCO')?'FoFo':m;
+function construir(cmd,src){
+  const fam=cmd.tipo, dn=cmd.dn||src.dn, d=src.d.clone().normalize(), p0=src.p;
+  const e={id:cmd.id,tipo:fam,fam,cmd,mat:src.mat,dn,dn2:null,eIn:'PONTA',eOut:'PONTA',eBr:null,
+    from:cmd.fonte&&!cmd.fonte.start?{id:cmd.fonte.id,port:cmd.fonte.port}:null,
+    pIn:{p:p0.clone(),d:d.clone(),dn,end:'PONTA'},pOut:null,pBr:null,len:0,ang:null,nome:''};
+  const g=new THREE.Group(); e.grupo=g;
+  const r=rExt(dn), ri=rInt(dn);
+
+  if(fam==='TUBO'){
+    const L=cmd.len, c=src.mat==='Aluminio'?COR.aluminio:COR.tubo, S=Sx(g,c);
+    e.nome='Tubo'; e.len=L;
+    oco(S,p0,p0.clone().addScaledVector(d,L),r,r,ri,ri);
+    e.pOut={p:p0.clone().addScaledVector(d,L),d:d.clone(),dn,end:'PONTA'};
+    return e;
+  }
+  if(fam==='CURVA'||fam==='JOELHO'){
+    const joelho=fam==='JOELHO', rad=cmd.ang*Math.PI/180;
+    const ein=cmd.eIn||'BOLSA', eout=cmd.eOut||'BOLSA';
+    const rc=(joelho?Cat.raioJoelho(dn):Cat.raioCurva(dn))*Mm;
+    const lenIn=lenCorpoFim(ein,dn)*Mm, lenOut=lenCorpoFim(eout,dn)*Mm;
+    const tt=cmd.dirVec?new V3(...cmd.dirVec).normalize():alvo(d,cmd.dir);
+    const pc=tt.clone().addScaledVector(d,-tt.dot(d)).normalize();
+    const d1=d.clone().multiplyScalar(Math.cos(rad)).addScaledVector(pc,Math.sin(rad)).normalize();
+    const sob=Mm, inicio=p0.clone().addScaledVector(d,lenIn>0?lenIn-sob:0);
+    const arc=new Arco(inicio,d,pc,rc,rad), fimArco=arc.getPoint(1);
+    const saida=fimArco.clone().addScaledVector(d1,lenOut>0?lenOut-sob:0);
+    const c=(ein==='SOLDA'||eout==='SOLDA')?COR.solda:COR.peca, S=Sx(g,c);
+    arcoOco(S,arc,r,ri,Math.max(8,Math.round(cmd.ang/3)));
+    Fim(S,new Quadro(p0,d),0,+1,ein,dn);
+    Fim(S,new Quadro(saida,d1),0,-1,eout,dn);
+    e.eIn=ein;e.eOut=eout;e.ang=cmd.ang;e.len=lenIn+lenOut+rc*rad;
+    e.nome=nomeDaPeca(fam,'',ein);
+    e.pOut={p:saida,d:d1,dn,end:eout};
+    e.pIn.end=ein;
+    return e;
+  }
+
+  // ---- pecas ----
+  const q=new Quadro(p0,d), W=(x,y,z)=>q.W(x,y,z);
+  const dn2=cmd.dn2>0?cmd.dn2:dn;
+  e.eIn=cmd.eIn||'FLANGE'; e.eOut=cmd.eOut||'FLANGE'; e.eBr=cmd.eBr||'FLANGE';
+  if(fam==='REDUCAO'||fam==='TE'||fam==='Y'||fam==='LUVA_LR') e.dn2=dn2;
+  let c=COR.peca, L=0, temSaida=true;
+  const preset=cmd.preset||'';
+  e.nome=nomeDaPeca(fam,preset,e.eIn);
+  const S0=Sx(g,c); let S=S0;
+  const setCor=cc=>{c=cc;S=Sx(g,cc)};
+
+  switch(fam){
+    case 'LUVA':{
+      const tp=(e.eIn==='ELETRO'||e.eIn==='TERMO')?e.eIn:'BOLSA'; e.eIn=e.eOut=tp;
+      if(tp==='BOLSA'){
+        L=(2*Cat.bolsa(dn)+30)*Mm; corpoOco(S,q,L,'BOLSA','BOLSA',dn);
+        Fim(S,q,0,+1,'BOLSA',dn); Fim(S,q,L,-1,'BOLSA',dn);
+        oco(S,W(0,0,L/2-12*Mm),W(0,0,L/2+12*Mm),r*1.36,r*1.36,ri,ri);
+      } else if(tp==='ELETRO'){
+        const lf=lenFim(tp,dn)*Mm; L=2*lf+20*Mm;
+        corpoOco(S,q,L,'ELETRO','ELETRO',dn,r*1.2);
+        Fim(S,q,0,+1,tp,dn); Fim(S,q,L,-1,tp,dn);
+        oco(S,W(0,0,L/2-6*Mm),W(0,0,L/2+6*Mm),r*1.28,r*1.28,ri,ri);
+      } else {
+        const prof=Math.round(40+0.35*dn)*Mm; L=2*prof+6*Mm;
+        const rb=r*1.1, cd=Math.max(2*Mm,r*0.06);
+        oco(S,W(0,0,0),W(0,0,L),rb,rb,ri,ri);
+        oco(S,W(0,0,0),W(0,0,7*Mm),rb+cd,rb+cd,r*0.99,r*0.99);
+        oco(S,W(0,0,L-7*Mm),W(0,0,L),rb+cd,rb+cd,r*0.99,r*0.99);
+      }
+      break}
+    case 'LUVA_LR':{
+      e.eIn=e.eOut='BOLSA';
+      const r2=rExt(dn2), b1=Cat.bolsa(dn)*Mm, b2=Cat.bolsa(dn2)*Mm, rb1=r*1.28, rb2=r2*1.28;
+      const lc=Math.max(40*Mm,Math.abs(rb1-rb2)*1.2); L=b1+lc+b2;
+      const ri2=rInt(dn2);
+      oco(S,W(0,0,0),W(0,0,b1),rb1,rb1,r*0.97,r*0.97);
+      oco(S,W(0,0,b1-Mm),W(0,0,b1+lc+Mm),rb1,rb2,ri,ri2);
+      oco(S,W(0,0,b1+lc-Mm),W(0,0,L),rb2,rb2,r2*0.97,r2*0.97);
+      oco(S,W(0,0,0),W(0,0,10*Mm),rb1*1.07,rb1*1.07,r*0.97,r*0.97);
+      oco(S,W(0,0,L-10*Mm),W(0,0,L),rb2*1.07,rb2*1.07,r2*0.97,r2*0.97);
+      anel(S,W(0,0,b1),q.Z,ri,r*0.97); anel(S,W(0,0,L-b2),q.Z,ri2,r2*0.97);
+      break}
+    case 'BORBOLETA':{
+      setCor(COR.bor);
+      const min=lenCorpoFim(e.eIn,dn)+lenCorpoFim(e.eOut,dn)+30;
+      L=Math.max(Cat.regL(dn)*0.85,min)*Mm;
+      oco(S,W(0,0,0),W(0,0,L),r*1.12,r*1.12,ri,ri);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn);
+      const rBar=barrilete(S,q,L,e.eIn,e.eOut,dn,1.4);
+      const up=cimaDe(d,q), lado=new V3().crossVectors(d,up).normalize(), cc=W(0,0,L/2);
+      const P=y=>cc.clone().addScaledVector(up,y);
+      const yN=rBar+r*0.3;
+      maci(S,P(ri),P(yN),r*0.42);
+      maci(S,P(yN-r*0.1),P(yN+r*0.12),r*0.55);
+      const yH=yN+r*0.12;
+      maci(S,P(yH-Mm),P(yH+r*0.2),r*0.24);
+      const tM=Math.max(8*Mm,r*0.2), yM=yH+r*0.2, lM=r*2.8, wM=r*0.5;
+      const cm=P(yM+tM/2-Mm);
+      maci(S,P(yM-Mm),P(yM+tM),r*0.42);
+      caixa(S,cm.clone().addScaledVector(d,lM*0.1),d,lado,up,lM,wM,tM);
+      caixa(S,cm,d,lado,up,wM,r*1.1,tM);
+      maci(S,cm.clone().addScaledVector(d,lM*0.6).addScaledVector(up,-tM/2),cm.clone().addScaledVector(d,lM*0.6).addScaledVector(up,tM/2),wM/2);
+      maci(S,cm.clone().addScaledVector(d,-lM*0.4).addScaledVector(up,-tM/2),cm.clone().addScaledVector(d,-lM*0.4).addScaledVector(up,tM/2),wM/2);
+      break}
+    case 'JM':{
+      e.eIn=e.eOut='JM';
+      const ext=lenJm(dn)*Mm; L=Math.max(2*ext+40*Mm,(cmd.lenForcado||0)*Mm);
+      const rb=r*1.28;
+      oco(S,W(0,0,0),W(0,0,L),rb,rb,ri,ri);
+      Fim(S,q,0,+1,'JM',dn); Fim(S,q,L,-1,'JM',dn);
+      break}
+    case 'JD':{
+      setCor(COR.jd); e.eIn=e.eOut='FLANGE';
+      const tF=Cat.flT(dn)*Mm, pad=cmd.len>0?cmd.len:Cat.jdLen(dn);
+      L=Math.max(pad,Cat.jdMin(dn))*Mm;
+      const pcd=Cat.flPCD(dn)/2*Mm, nT=Cat.parN(dn), bit=Cat.parM(dn)*Mm, rp=bit/2;
+      const rb=Math.max(Math.min(r*1.22,pcd-rp-4*Mm),r*1.04), rA=Math.max(Math.min(rb*1.12,pcd-rp-2*Mm),rb);
+      oco(S,W(0,0,0),W(0,0,L),r,r,ri,ri);
+      Fim(S,q,0,+1,'FLANGE',dn,false); Fim(S,q,L,-1,'FLANGE',dn,false);
+      const ls=(L-2*tF)*0.5, zL=L-tF-ls;
+      oco(S,W(0,0,zL),W(0,0,L-tF+Mm),rb,rb,ri,ri);
+      oco(S,W(0,0,zL),W(0,0,zL+tF*0.7),rA,rA,ri,ri);
+      const porca=bit*0.8, ponta=4*Mm;
+      for(let k=0;k<nT;k++){
+        const a=Math.PI/nT+2*Math.PI*k/nT, x=Math.cos(a)*pcd, y=Math.sin(a)*pcd;
+        maci(S,W(x,y,-(porca+ponta)),W(x,y,L+porca+ponta),rp);
+        maci(S,W(x,y,-porca),W(x,y,0),rp*1.7);
+        maci(S,W(x,y,L),W(x,y,L+porca),rp*1.7);
+      }
+      break}
+    case 'CAP':{
+      const ent=e.eIn==='PONTA'?'BOLSA':e.eIn; e.eIn=ent; e.eOut='FECHADA'; temSaida=false;
+      const rb=r*1.28;
+      if(ent==='FLANGE'){
+        const t=Cat.flT(dn)*Mm; L=t*1.15;
+        maci(S,W(0,0,0),W(0,0,L),r*0.6);
+        flange(S,q,0,+1,dn,false);
+      } else {
+        const ext=lenFim(ent,dn)*Mm, fundo=Math.max(14*Mm,r*0.25), ch=Math.min(8*Mm,fundo*0.6);
+        L=ext+fundo;
+        oco(S,W(0,0,ext),W(0,0,L-ch+Mm),rb,rb,ri,ri);
+        maci(S,W(0,0,L-ch),W(0,0,L),rb,rb*0.9);
+        Fim(S,q,0,+1,ent,dn);
+      }
+      break}
+    case 'FLANGE':{
+      e.eIn='BOLSA'; e.eOut='FLANGE';
+      L=Cat.flT(dn)*Mm; flange(S,q,0,+1,dn,true);
+      // furo central = diametro externo do tubo
+      break}
+    case 'RETA':{
+      const min=lenFim(e.eIn,dn)+lenFim(e.eOut,dn)+30;
+      L=Math.max(cmd.len||300,min)*Mm;
+      corpoOco(S,q,L,e.eIn,e.eOut,dn);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn);
+      break}
+    case 'REDUCAO':{
+      const r2=rExt(dn2), ri2=rInt(dn2);
+      const dif=Math.abs(Cat.de(dn)-Cat.de(dn2));
+      const min=lenFim(e.eIn,dn)+lenFim(e.eOut,dn2)+40;
+      L=Math.max(Math.max(min,2*dif+120),cmd.lenForcado||0)*Mm;
+      oco(S,W(0,0,0),W(0,0,L),r,r2,ri,ri2);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn2);
+      break}
+    case 'TE':{
+      const r2=rExt(dn2), ri2=rInt(dn2);
+      const B=lenFim(e.eBr,dn2)*Mm+r+100*Mm;
+      const minL=(lenFim(e.eIn,dn)+lenFim(e.eOut,dn)+Cat.de(dn2)+80)*Mm;
+      L=Math.max(2*B,minL);
+      oco(S,W(0,0,0),W(0,0,L),r,r,ri,ri);
+      const b=alvo(d,cmd.dir||'Cima'), centro=W(0,0,L/2), topo=centro.clone().addScaledVector(b,B);
+      const inicioBr=centro.clone().addScaledVector(b,ri*0.6);
+      oco(S,inicioBr,topo,r2,r2,ri2,ri2);
+      oco(S,centro,centro.clone().addScaledVector(b,r*0.9),r2*1.15,r2*1.15,0,0);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn);
+      Fim(S,new Quadro(centro,b),B,-1,e.eBr,dn2);
+      e.pBr={p:topo,d:b,dn:dn2,end:e.eBr};
+      break}
+    case 'Y':{
+      const r2=rExt(dn2), ri2=rInt(dn2);
+      const b=alvo(d,cmd.dir||'Cima'), c45=Math.cos(Math.PI/4);
+      const dd=d.clone().multiplyScalar(c45).addScaledVector(b,c45).normalize();
+      const zc=lenCorpoFim(e.eIn,dn)*Mm+r2*1.5+30*Mm;
+      const roMain=(e.eOut==='FLANGE'?Cat.flOD(dn)/2:Cat.de(dn)/2*1.28)*Mm;
+      const roBr=(e.eBr==='FLANGE'?Cat.flOD(dn2)/2:Cat.de(dn2)/2*1.28)*Mm;
+      let B=lenCorpoFim(e.eBr,dn2)*Mm+(r+r2)*1.6+60*Mm;
+      B=Math.max(B,(roMain+roBr+20*Mm)/c45);
+      const minL=lenCorpoFim(e.eIn,dn)*Mm+lenCorpoFim(e.eOut,dn)*Mm+2*r+80*Mm;
+      L=Math.max(minL,zc+B*c45+r2*c45);
+      oco(S,W(0,0,0),W(0,0,L),r,r,ri,ri);
+      const centro=W(0,0,zc), topo=centro.clone().addScaledVector(dd,B);
+      oco(S,centro.clone().addScaledVector(dd,ri*0.6),topo,r2,r2,ri2,ri2);
+      oco(S,centro.clone().addScaledVector(dd,-r2*0.3),centro.clone().addScaledVector(dd,r*1.2),r2*1.15,r2*1.15,0,0);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn);
+      Fim(S,new Quadro(centro,dd),B,-1,e.eBr,dn2);
+      e.pBr={p:topo,d:dd,dn:dn2,end:e.eBr};
+      break}
+    case 'REGISTRO':{
+      setCor(COR.reg);
+      const rmm=r/Mm, cfIn=lenCorpoFim(e.eIn,dn)*Mm, cfOut=lenCorpoFim(e.eOut,dn)*Mm, central=Math.min(1.4*rmm,160)*Mm;
+      L=Math.max(Cat.regL(dn)*Mm,cfIn+cfOut+central);
+      oco(S,W(0,0,0),W(0,0,L),r*1.12,r*1.12,ri,ri);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn);
+      barrilete(S,q,L,e.eIn,e.eOut,dn,1.18);
+      const up=cimaDe(d,q), lado=new V3().crossVectors(d,up).normalize();
+      const zi=cfIn, zf=L-cfOut, cc=W(0,0,(zi+zf)/2), P=y=>cc.clone().addScaledVector(up,y);
+      const a=(zf-zi)*0.5*0.94, b=Math.min(r*0.95,a*1.5), yA=r*1.4;
+      caixa(S,P((ri+yA)/2),lado,d,up,2*b,2*a,yA-ri);
+      maci(S,P(yA).addScaledVector(lado,-b),P(yA).addScaledVector(lado,b),a);
+      const yTop=yA+a, tF=Math.max(8*Mm,r*0.1), rc=Math.min(a,b)*0.62, rF=rc*1.35;
+      maci(S,P(yA+a*0.3),P(yTop+tF),rF);
+      flangeCastelo(S,cc,up,d,lado,yTop+tF,rF,tF,r,dn>=300?8:6);
+      const yc0=yTop+tF, hc=r*0.45;
+      maci(S,P(yc0-Mm),P(yc0+hc),rc);
+      const rn=Math.max(rc*0.55,14*Mm), yN0=yc0+hc, yN1=yN0+r*0.35;
+      maci(S,P(yN0-Mm),P(yN1),rc,rn);
+      const yN2=yN1+r*0.3; maci(S,P(yN1-Mm),P(yN2),rn);
+      const tG=Math.max(8*Mm,r*0.1); maci(S,P(yN2),P(yN2+tG),rn*1.3);
+      const rh=Math.max(7*Mm,r*0.09), yH=yN2+tG, hh=Math.max(r*0.7,30*Mm);
+      maci(S,P(yH-Mm),P(yH+hh),rh);
+      const rcb=Math.min(Math.max(r*0.26,20*Mm),rc*0.9), hcb=Math.max(r*0.8,50*Mm), yC1=yH+hh+hcb;
+      maci(S,P(yH+hh-Mm),P(yC1),rcb,rcb*0.8);
+      const sq=rcb*1.1, hsq=Math.max(rcb*0.9,15*Mm);
+      caixa(S,P(yC1+hsq/2-Mm),lado,d,up,sq,sq,hsq);
+      break}
+    case 'RETENCAO':{
+      setCor(COR.ret);
+      const min=lenCorpoFim(e.eIn,dn)+lenCorpoFim(e.eOut,dn)+40;
+      L=Math.max(Cat.regL(dn)*1.1,min)*Mm;
+      oco(S,W(0,0,0),W(0,0,L),r*1.12,r*1.12,ri,ri);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn);
+      const rBar=barrilete(S,q,L,e.eIn,e.eOut,dn,1.3);
+      const up=cimaDe(d,q), lado=new V3().crossVectors(d,up).normalize(), cc=W(0,0,L/2), P=y=>cc.clone().addScaledVector(up,y);
+      const lim=larguraMaxima(L,e.eIn,e.eOut,dn), rV=Math.min(r*1.05,lim/1.28), yTopo=r*1.35, tF=Math.max(10*Mm,r*0.13);
+      maci(S,P(ri),P(yTopo),rV);
+      sapata(S,cc,up,rBar,r,lim);
+      flangeCastelo(S,cc,up,d,lado,yTopo,rV*1.28,tF,r,dn>=300?8:6);
+      const yCal=yTopo+r*0.5;
+      maci(S,P(yTopo-Mm),P(yCal),rV*1.05,rV*0.45);
+      maci(S,P(yCal-Mm),P(yCal+r*0.15),rV*0.45);
+      maci(S,P(yCal+r*0.15-Mm),P(yCal+r*0.3),rV*0.3);
+      const zl=Math.max(0,(L-(lenCorpoFim(e.eIn,dn)+lenCorpoFim(e.eOut,dn))*Mm)*0.2), pl=cc.clone().addScaledVector(d,-zl);
+      maci(S,pl.clone().addScaledVector(lado,rBar*0.5),pl.clone().addScaledVector(lado,rBar+r*0.4),r*0.3);
+      maci(S,pl.clone().addScaledVector(lado,rBar+r*0.4-Mm),pl.clone().addScaledVector(lado,rBar+r*0.5),r*0.38);
+      break}
+    case 'VRP':{
+      setCor(COR.vrp);
+      const min=lenCorpoFim(e.eIn,dn)+lenCorpoFim(e.eOut,dn)+40;
+      L=Math.max(Cat.regL(dn)*1.15,min)*Mm;
+      oco(S,W(0,0,0),W(0,0,L),r*1.12,r*1.12,ri,ri);
+      Fim(S,q,0,+1,e.eIn,dn); Fim(S,q,L,-1,e.eOut,dn);
+      const rBar=barrilete(S,q,L,e.eIn,e.eOut,dn,1.25);
+      const up=cimaDe(d,q), lado=new V3().crossVectors(d,up).normalize(), cc=W(0,0,L/2), P=y=>cc.clone().addScaledVector(up,y);
+      const lim=larguraMaxima(L,e.eIn,e.eOut,dn), rV=Math.min(r*0.95,lim), yCol=r*1.3, rD=r*1.75;
+      maci(S,P(ri),P(yCol),rV);
+      sapata(S,cc,up,rBar,r,lim);
+      const yA=yCol+r*0.5, yB=yA+r*0.5, yC=yB+r*0.7;
+      maci(S,P(yCol-Mm),P(yA),rV,rD);
+      maci(S,P(yA-Mm),P(yB+Mm),rD);
+      const tR=Math.max(8*Mm,r*0.1);
+      maci(S,P(yA),P(yA+tR),rD*1.08); maci(S,P(yB-tR),P(yB),rD*1.08);
+      maci(S,P(yB-Mm),P(yC),rD,r*0.5);
+      maci(S,P(yC-Mm),P(yC+r*0.25),r*0.5);
+      const rt=Math.max(5*Mm,r*0.05);
+      maci(S,P(yC+r*0.25-Mm),P(yC+r*0.75),Math.max(6*Mm,r*0.07));
+      const yP=yA+r*0.25, xP=rD+r*0.55, yJ=r*0.2;
+      const PL=(y,x)=>cc.clone().addScaledVector(up,y).addScaledVector(lado,x);
+      maci(S,PL(yP,rD*0.9),PL(yP,xP+rt),rt);
+      maci(S,PL(yP,xP),PL(yJ,xP),rt);
+      maci(S,PL(yJ,xP+rt),PL(yJ,rBar*0.6),rt);
+      maci(S,PL((yP+yJ)/2-r*0.25,xP),PL((yP+yJ)/2+r*0.25,xP),r*0.2);
+      break}
+    case 'VENTOSA':{
+      setCor(COR.vent);
+      const ent=e.eIn==='PONTA'?'FLANGE':e.eIn; e.eIn=ent; e.eOut='FECHADA'; temSaida=false;
+      const rN=r*1.1, rB=Math.max(r*1.25,40*Mm), rF=rB*1.45, tF=rB*0.22;
+      const zT=lenCorpoFim(ent,dn)*Mm, z1=zT+rB*0.6, z2=z1+rB*2.4, z3=z2+tF*1.6, z4=z3+rB*0.35, z5=z4+rB*0.3, rBoss=rB*0.5;
+      const rO=Math.max(4*Mm,rBoss*0.35); L=z5;
+      oco(S,W(0,0,0),W(0,0,zT),rN,rN,ri,ri);
+      Fim(S,q,0,+1,ent,dn);
+      oco(S,W(0,0,zT-Mm),W(0,0,z1),rN,rB,ri,rB*0.82);
+      oco(S,W(0,0,z1-Mm),W(0,0,z2+Mm),rB,rB,rB*0.82,rB*0.82);
+      oco(S,W(0,0,z2),W(0,0,z3),rF,rF,rO,rO);
+      const rpb=rF*0.07;
+      for(let k=0;k<6;k++){const a=2*Math.PI*k/6,bx=Math.cos(a)*rF*0.8,by=Math.sin(a)*rF*0.8;maci(S,W(bx,by,z3-Mm),W(bx,by,z3+rpb*1.4),rpb)}
+      oco(S,W(0,0,z3-Mm),W(0,0,z4),rF*0.85,rBoss,rO,rO);
+      oco(S,W(0,0,z4-Mm),W(0,0,z5),rBoss,rBoss,rO,rO);
+      const rS=rB*0.5, xS=rF+rS*0.55, zS0=z1+rB*0.7, zS1=z2-tF, tFs=tF*0.8, zc=zS0+(zS1-zS0)*0.35;
+      maci(S,W(0,0,zc),W(xS,0,zc),rS*0.45);
+      maci(S,W(xS,0,zS0),W(xS,0,zS1+Mm),rS);
+      maci(S,W(xS,0,zS1),W(xS,0,zS1+tFs),rS*1.4);
+      maci(S,W(xS,0,zS1+tFs-Mm),W(xS,0,zS1+tFs+rS*0.45),rS*0.5);
+      break}
+    default: throw new Error('Familia desconhecida: '+fam);
+  }
+  e.len=L;
+  e.pIn.end=e.eIn;
+  const dnOut=(fam==='REDUCAO'||fam==='LUVA_LR')?dn2:dn;
+  if(temSaida) e.pOut={p:W(0,0,L),d:d.clone(),dn:dnOut,end:e.eOut};
+  return e;
 }
 
 /* ---------- Modelo ---------- */
 const rede=[]; let nextId=1;
 const byId=id=>rede.find(e=>e.id===id);
-const V=a=>new THREE.Vector3(a[0],a[1],a[2]);
-
-// Direcao relativa ao rumo (Z para cima). Em tubo vertical: Direita=+X, Esquerda=-X, Cima=+Y, Baixo=-Y.
-function alvo(d,key){
-  const Z=new THREE.Vector3(0,0,1);
-  if(Math.abs(d.z)>0.999) return ({Cima:new THREE.Vector3(0,1,0),Baixo:new THREE.Vector3(0,-1,0),Direita:new THREE.Vector3(1,0,0),Esquerda:new THREE.Vector3(-1,0,0)})[key];
-  if(key==='Direita') return new THREE.Vector3().crossVectors(d,Z).normalize();
-  if(key==='Esquerda') return new THREE.Vector3().crossVectors(Z,d).normalize();
-  const s=key==='Cima'?1:-1;
-  return Z.clone().multiplyScalar(s).addScaledVector(d,-s*d.z).normalize();
-}
+const nomeEl=e=>e.nome;
+const V=a=>new V3(a[0],a[1],a[2]);
 function resolve(cmd){
   const f=cmd.fonte;
   if(f.start) return {p:V(f.start.p),d:V(f.start.d).normalize(),dn:f.start.dn,mat:f.start.mat,end:'PONTA',el:null};
@@ -272,87 +769,6 @@ function resolve(cmd){
   const port=f.port==='Br'?el.pBr:el.pOut; if(!port) throw new Error('A origem não tem essa saída');
   return {p:port.p.clone(),d:port.d.clone(),dn:port.dn,mat:el.mat,end:port.end,el,port:f.port};
 }
-
-function construir(cmd,src){
-  const t=cmd.tipo, dn=cmd.dn||src.dn, d=src.d, p0=src.p, corMat=COR_MAT[src.mat]||0x2f6fa8;
-  const e={id:cmd.id,tipo:t,cmd,mat:src.mat,dn,dn2:null,eIn:'PONTA',eOut:'PONTA',eBr:null,
-    from:cmd.fonte.start?null:{id:cmd.fonte.id,port:cmd.fonte.port},
-    pIn:{p:p0.clone(),d:d.clone(),dn,end:'PONTA'},pOut:null,pBr:null,lenM:0,ang:null};
-  const g=new THREE.Group(); const r=rM(dn);
-  if(t==='TUBO'){
-    const L=cmd.len; e.lenM=L;
-    cil(g,p0,d,L,r,r,corMat);
-    e.pOut={p:p0.clone().addScaledVector(d,L),d:d.clone(),dn,end:'PONTA'};
-  } else if(t==='CURVA'||t==='JOELHO'){
-    const th=cmd.ang*Math.PI/180, R=(t==='CURVA'?Cat.raioCurva(dn):Cat.raioJoelho(dn))*K;
-    const tt=cmd.dirVec?V(cmd.dirVec).normalize():alvo(d,cmd.dir);
-    e.ang=cmd.ang; e.eIn=cmd.eIn; e.eOut=cmd.eOut;
-    const arc=new Arco(p0,d,tt,R,th);
-    g.add(new THREE.Mesh(new THREE.TubeGeometry(arc,Math.max(8,Math.round(cmd.ang/3)),r,32,false),mat(corMat)));
-    const pf=arc.getPoint(1), df=d.clone().multiplyScalar(Math.cos(th)).addScaledVector(tt,Math.sin(th)).normalize();
-    ext(g,p0,d,e.eIn,dn,corMat); ext(g,pf,df.clone().negate(),e.eOut,dn,corMat);
-    e.pOut={p:pf,d:df,dn,end:e.eOut}; e.lenM=R*th;
-  } else {
-    const def=PECAS[t]; const L=(cmd.len>0?cmd.len:def.L(dn))*K; e.lenM=L;
-    e.eIn=cmd.eIn||def.in[0];
-    const dnOut=def.dn2?cmd.dn2:dn; if(def.dn2) e.dn2=cmd.dn2;
-    const hasOut=!!def.out; if(hasOut) e.eOut=cmd.eOut||def.out[0];
-    const pf=p0.clone().addScaledVector(d,L), dr=perp(d);
-    const rO=rM(dnOut);
-    let cor=corMat;
-    switch(t){
-      case 'REDUCAO': cil(g,p0,d,L,r,rO,cor); break;
-      case 'LUVA_LR':{const a=L*0.4;cil(g,p0,d,a,r*1.14,r*1.14,cor);cil(g,p0.clone().addScaledVector(d,a),d,L-2*a,r*1.14,rO*1.14,cor);cil(g,pf.clone().addScaledVector(d,-a),d,a,rO*1.14,rO*1.14,cor);break}
-      case 'LUVA': cil(g,p0,d,L,r*1.14,r*1.14,cor); break;
-      case 'JM': cil(g,p0,d,L,r*1.1,r*1.1,cor); break;
-      case 'JD':{cil(g,p0,d,L,r,r,cor);cil(g,p0.clone().addScaledVector(d,L*.25),d,L*.5,r*1.12,r*1.12,0x7a8796);break}
-      case 'TE':{
-        e.eBr=cmd.eBr||'BOLSA';
-        const Lbr=(200+0.6*dn)*K, tt=alvo(d,cmd.dir||'Cima'), rb=rM(cmd.dn2);
-        cil(g,p0,d,L,r,r,cor);
-        const c=p0.clone().addScaledVector(d,L/2);
-        cil(g,c,tt,Lbr,rb,rb,cor);
-        const pb=c.clone().addScaledVector(tt,Lbr);
-        ext(g,pb,tt.clone().negate(),e.eBr,cmd.dn2,cor);
-        e.pBr={p:pb,d:tt,dn:cmd.dn2,end:e.eBr};
-        break}
-      case 'REG_GAVETA':{cor=COR_REG;cil(g,p0,d,L,r*1.05,r*1.05,cor);
-        const c=p0.clone().addScaledVector(d,L/2);
-        cil(g,c,dr,r*1.6,r*.55,r*.55,cor);cil(g,c.clone().addScaledVector(dr,r*1.6),dr,r*.7,r*.15,r*.15,0x333333);
-        const cross=new THREE.Vector3().crossVectors(d,dr).normalize();
-        cil(g,c.clone().addScaledVector(dr,r*2.3).addScaledVector(cross,-r*.45),cross,r*.9,r*.07,r*.07,0x333333);break}
-      case 'BORBOLETA':{cor=0x1d4e89;cil(g,p0,d,L,r*1.18,r*1.18,cor);
-        const c=p0.clone().addScaledVector(d,L/2);
-        cil(g,c,dr,r*1.5,r*.3,r*.3,cor);
-        cil(g,c.clone().addScaledVector(dr,r*1.5),new THREE.Vector3().crossVectors(d,dr).normalize(),r*1.1,r*.12,r*.12,0x333333);break}
-      case 'RETENCAO':{cor=COR_RET;cil(g,p0,d,L,r*1.1,r*1.1,cor);
-        const c=p0.clone().addScaledVector(d,L/2);cil(g,c,dr,r*1.3,r*.9,r*.9,cor);esfera(g,c.clone().addScaledVector(dr,r*1.3),r*.9,cor);break}
-      case 'VRP':{cor=COR_VRP;cil(g,p0,d,L,r*1.08,r*1.08,cor);
-        const c=p0.clone().addScaledVector(d,L*.5);cil(g,c,dr,r*1.2,r*1.4,r*1.4,cor);esfera(g,c.clone().addScaledVector(dr,r*1.2),r*1.4,cor);
-        cil(g,c.clone().addScaledVector(d,L*.3),dr,r*.9,r*.25,r*.25,0x333333);break}
-      case 'VENTOSA':{cor=COR_VENT;cil(g,p0,d,L*.55,r*.9,r*.9,cor);esfera(g,p0.clone().addScaledVector(d,L*.55),r*.9,cor);cil(g,p0.clone().addScaledVector(d,L*.55),d,L*.45,r*.3,r*.3,cor);break}
-      case 'CAP': cil(g,p0,d,L,r*1.14,r*1.14,cor); break;
-      case 'FLANGE_ANEL': break;
-      default: cil(g,p0,d,L,r,r,cor); // RETA, CARRETEL, PONTA_FLANGE, BOLSA_FLANGE
-    }
-    ext(g,p0,d,e.eIn,dn,cor);
-    if(hasOut){ ext(g,pf,d.clone().negate(),e.eOut,dnOut,cor); e.pOut={p:pf,d:d.clone(),dn:dnOut,end:e.eOut}; }
-    if(t==='CAP'&&e.eIn==='FLANGE') cil(g,p0,d,Cat.flT(dn)*K,Cat.flOD(dn)/2*K,Cat.flOD(dn)/2*K,COR_FL);
-  }
-  e.pIn.end=e.eIn; e.grupo=g;
-  return e;
-}
-
-// a = extremidade da origem, b = entrada do novo elemento
-function compat(a,b){
-  if(a==='FLANGE'&&b==='FLANGE') return 'FLANGE';
-  if((a==='PONTA'&&b==='BOLSA')||(a==='BOLSA'&&b==='PONTA')) return 'ELASTICA';
-  if((a==='PONTA'&&b==='JM')||(a==='JM'&&b==='PONTA')) return 'JM';
-  return null;
-}
-
-
-
 function adicionar(cmd){
   let src; try{src=resolve(cmd)}catch(err){msg(err.message,'warn');return null}
   if(cmd.id==null) cmd.id=nextId;
@@ -360,106 +776,18 @@ function adicionar(cmd){
   const e=construir(cmd,src);
   e.grupo.userData.id=e.id;
   rede.push(e); raiz.add(e.grupo);
+  if(typeof aoMudar==='function') aoMudar();
   return e;
 }
+function descarta(g){g.traverse(o=>{if(o.geometry&&!Object.values(geoCache).includes(o.geometry))o.geometry.dispose()})}
 function desfazer(){
   const e=rede.pop(); if(!e) return;
-  raiz.remove(e.grupo); e.grupo.traverse(o=>{if(o.geometry)o.geometry.dispose()});
+  raiz.remove(e.grupo); descarta(e.grupo);
   nextId=e.id;
+  if(typeof aoMudar==='function') aoMudar();
 }
 function limpar(){while(rede.length)desfazer();nextId=1}
 function usado(id,port){return rede.some(e=>e.from&&e.from.id===id&&e.from.port===port)}
-
-/* ---------- Quantitativo ---------- */
-function quantitativo(){
-  const tubos={},pecas={},verif=[],fl={},el={},jm={};
-  const get=(o,k,fn)=>o[k]||(o[k]=fn());
-  for(const e of rede){
-    if(e.tipo==='TUBO') get(tubos,`${e.mat}|${e.dn}`,()=>({mat:e.mat,dn:e.dn,m:0})).m+=e.lenM;
-    else{
-      const def=PECAS[e.tipo];
-      const ends=[e.eIn,def.out?e.eOut:null,e.eBr].filter(Boolean).map(x=>END_NOME[x]).join(' / ');
-      const dn=e.dn2?`DN${e.dn}×DN${e.dn2}`:`DN${e.dn}`;
-      const nome=nomeEl(e)+(e.ang?` ${e.ang}°`:'');
-      get(pecas,`${e.tipo}|${dn}|${e.ang}|${ends}`,()=>({nome,dn,ends,q:0})).q++;
-    }
-    if(e.from){
-      const o=byId(e.from.id), port=e.from.port==='Br'?o.pBr:e.from.port==='In'?{end:o.eIn}:o.pOut, kind=compat(port.end,e.eIn);
-      if(!kind) verif.push(`Ligação incompatível: ${END_NOME[port.end]} → ${END_NOME[e.eIn]} entre #${o.id} ${nomeEl(o)} e #${e.id} ${nomeEl(e)}.`);
-      else get(kind==='FLANGE'?fl:kind==='ELASTICA'?el:jm,`${e.dn}`,()=>({dn:e.dn,q:0})).q++;
-    }
-  }
-  for(const e of rede){
-    if(e.pOut&&e.pOut.end==='FLANGE'&&!usado(e.id,'Out')) verif.push(`Flange sem par: saída de #${e.id} ${nomeEl(e)} (DN${e.pOut.dn}).`);
-    if(e.pBr&&e.pBr.end==='FLANGE'&&!usado(e.id,'Br')) verif.push(`Flange sem par: derivação de #${e.id} ${nomeEl(e)} (DN${e.pBr.dn}).`);
-    if(!e.from&&e.eIn==='FLANGE'&&!usado(e.id,'In')) verif.push(`Flange sem par: entrada de #${e.id} ${nomeEl(e)} (DN${e.dn}).`);
-  }
-  const lin=[];
-  for(const x of Object.values(tubos).sort((a,b)=>a.dn-b.dn)) lin.push(['Tubos',`Tubo ${x.mat} DN${x.dn}`,'m',x.m.toFixed(2).replace('.',',')]);
-  for(const x of Object.values(pecas)) lin.push(['Peças',`${x.nome} ${x.dn} (${x.ends})`,'un',x.q]);
-  for(const x of Object.values(fl)){
-    const n=Cat.parN(x.dn),m=Cat.parM(x.dn),L=Cat.parLen(x.dn);
-    lin.push(['Juntas flangeadas',`Parafuso M${m} x ${L} (DN${x.dn})`,'un',n*x.q]);
-    lin.push(['Juntas flangeadas',`Porca M${m} (DN${x.dn})`,'un',n*x.q]);
-    lin.push(['Juntas flangeadas',`Arruela M${m} (DN${x.dn})`,'un',2*n*x.q]);
-    lin.push(['Juntas flangeadas',`Junta de vedação DN${x.dn}`,'un',x.q]);
-  }
-  for(const x of Object.values(jm)){
-    const n=Cat.jmN(x.dn),m=Cat.jmM(x.dn),L=Cat.jmParLen(x.dn);
-    lin.push(['Juntas mecânicas',`Anel de borracha DN${x.dn}`,'un',x.q]);
-    lin.push(['Juntas mecânicas',`Contraflange DN${x.dn}`,'un',x.q]);
-    lin.push(['Juntas mecânicas',`Parafuso T M${m} x ${L} (DN${x.dn})`,'un',n*x.q]);
-    lin.push(['Juntas mecânicas',`Porca M${m} (DN${x.dn})`,'un',n*x.q]);
-  }
-  for(const x of Object.values(el)) lin.push(['Juntas elásticas',`Anel de borracha DN${x.dn}`,'un',x.q]);
-  return {lin,verif};
-}
-let ultimoCsv='';
-function mostraQuant(){
-  if(!rede.length){msg('A rede está vazia.','warn');return}
-  const {lin,verif}=quantitativo();
-  let h='<h2 style="margin:0 0 4px;font-size:17px">Quantitativo</h2>';
-  for(const c of [...new Set(lin.map(l=>l[0]))]){
-    h+=`<h3>${c}</h3><table><tr><th>Descrição</th><th>Un.</th><th class="n">Qtd.</th></tr>`;
-    for(const l of lin.filter(x=>x[0]===c)) h+=`<tr><td>${l[1]}</td><td>${l[2]}</td><td class="n">${l[3]}</td></tr>`;
-    h+='</table>';
-  }
-  if(verif.length) h+='<h3>Verificar</h3><ul>'+verif.map(v=>`<li class="warnli">${v}</li>`).join('')+'</ul>';
-  $('dlgBody').innerHTML=h;
-  ultimoCsv='﻿Categoria;Descrição;Unidade;Quantidade\r\n'+lin.map(l=>l.join(';')).join('\r\n')
-    +(verif.length?'\r\n'+verif.map(v=>'Verificar;'+v+';;').join('\r\n'):'');
-  $('dlg').showModal();
-}
-
-function imprimir(x,y,w,h,pap){
-  const paisagem=w>=h, papel=pap, [pl,ps]=PAPEL[papel];
-  const pw=paisagem?pl:ps, ph=paisagem?ps:pl; // folha em mm na orientacao escolhida
-  const M=10, legenda=8, areaW=pw-2*M, areaH=ph-2*M-legenda;
-  // pixels de saida (200 dpi) com a mesma proporcao da janela, ajustados a area util da folha
-  const pxMm=200/25.4, esc=Math.min(areaW*pxMm/w,areaH*pxMm/h);
-  const W=Math.round(w*esc), H=Math.round(h*esc);
-  const fw=view.clientWidth, fh=view.clientHeight;
-  const bgAnt=scene.background; scene.background=new THREE.Color(0xffffff); grid.visible=false;
-  renderer.setPixelRatio(1); renderer.setSize(W,H,false);
-  camera.setViewOffset(fw,fh,x,y,w,h); camera.updateProjectionMatrix();
-  renderer.render(scene,camera);
-  const url=renderer.domElement.toDataURL('image/png');
-  camera.clearViewOffset(); scene.background=bgAnt; grid.visible=true;
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2)); ajusta();
-  const hoje=new Date().toLocaleDateString('pt-BR');
-  const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
-  f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><title>RedesAgua</title><style>
-    @page{size:${papel} ${paisagem?'landscape':'portrait'};margin:${M}mm}
-    html,body{margin:0;padding:0;font:11px system-ui,sans-serif;color:#222}
-    .box{width:${areaW}mm;height:${areaH}mm;display:flex;align-items:center;justify-content:center;border:.3mm solid #999;box-sizing:border-box}
-    img{max-width:100%;max-height:100%;object-fit:contain}
-    .cap{height:${legenda}mm;display:flex;align-items:flex-end;justify-content:space-between}
-  </style></head><body><div class="box"><img id="i" src="${url}"></div>
-  <div class="cap"><span>RedesAgua — rede de água</span><span>${papel} ${paisagem?'paisagem':'retrato'} — ${hoje}</span></div></body></html>`;
-  f.onload=()=>{const im=f.contentDocument.getElementById('i');const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)};im.complete?go():im.onload=go};
-  document.body.appendChild(f);
-  msg(`Imprimindo janela em ${papel} ${paisagem?'paisagem':'retrato'}, ajustada à folha.`,'ok');
-}
 
 
 /* ---------- Linha de comando (estilo CAD) ---------- */
@@ -596,7 +924,7 @@ canvas.addEventListener('pointermove',ev=>{
     hoverDir=len>1e-6?d.clone().normalize():null;
     const pos=guia.geometry.attributes.position; pos.setXYZ(0,base.x,base.y,base.z);pos.setXYZ(1,r.p.x,r.p.y,r.p.z);pos.needsUpdate=true;
     guia.geometry.computeBoundingSphere(); guia.visible=true;
-    const t=$('tip'); t.textContent=fmt(len)+' m'; t.classList.remove('hide');
+    const t=$('tip'); t.textContent=fmt(len)+' cm'; t.classList.remove('hide');
     t.style.left=(ev.clientX-b.left+14)+'px'; t.style.top=(ev.clientY-b.top+14)+'px';
   }
   marca.visible=r.snap; if(r.snap){marca.position.copy(r.p);const s=Math.max(camera.position.distanceTo(r.p)*0.012,0.02);marca.scale.setScalar(s)}
@@ -648,6 +976,7 @@ function addEl(cmd){
 function desfazTrecho(){
   const t=trAtual; const h=t.hist.pop();
   if(!h){msg('Nada para desfazer.','warn');return}
+  if(h.extra) desfazer();
   desfazer(); t.atual=h.antes.atual; t.fonte=h.antes.fonte; t.n--; t.fechada=false;
 }
 async function pedirAngulo(def){
@@ -657,10 +986,12 @@ async function pedirAngulo(def){
   if(Math.abs(p-v)>0.01) msg(`Ângulo ${v} não é padrão; usando ${p}°.`,'warn');
   return p;
 }
-function extCurva(t){return t.mat==='PEAD'?'PONTA':'BOLSA'}
+// PEAD: joelho de eletrofusao; aluminio: curva soldada; demais: bolsa-bolsa (como no plugin)
+function extCurva(t){return t.mat==='PEAD'?'ELETRO':(t.mat==='Aluminio'?'SOLDA':'BOLSA')}
+const tipoCurva=t=>t.mat==='PEAD'?'JOELHO':'CURVA';
 function curvaETubo(t,ang,alvoV,comp){
   const d=t.atual.d, key=dirChave(d,alvoV);
-  const c=addEl({tipo:'CURVA',ang,dir:key,eIn:extCurva(t),eOut:extCurva(t)}); if(!c) return;
+  const c=addEl({tipo:tipoCurva(t),ang,dir:key,eIn:extCurva(t),eOut:extCurva(t)}); if(!c) return;
   addEl({tipo:'TUBO',len:comp});
 }
 // converte um vetor alvo em chave de direcao (Cima/Baixo/Esquerda/Direita) mais proxima
@@ -673,7 +1004,7 @@ function dirChave(d,alvoV){
 function curvaETuboVetor(t,ang,alvoV,comp){
   const d=t.atual.d, a=alvoV.clone().sub(d.clone().multiplyScalar(alvoV.dot(d)));
   if(a.length()<1e-6){msg('Direção inválida.','warn');return}
-  const c=addEl({tipo:'CURVA',ang,dirVec:[a.x,a.y,a.z],eIn:extCurva(t),eOut:extCurva(t)}); if(!c) return;
+  const c=addEl({tipo:tipoCurva(t),ang,dirVec:[a.x,a.y,a.z],eIn:extCurva(t),eOut:extCurva(t)}); if(!c) return;
   addEl({tipo:'TUBO',len:comp});
 }
 
@@ -689,7 +1020,7 @@ async function comandoPonto(t,pedido){
 }
 async function comandoReta(t){
   if(!t.atual.d){msg('Sem direção definida: clique um ponto para o primeiro trecho.','warn');return}
-  const r=await pedir({tipo:'num',msg:'Comprimento do tubo na direção atual (m):',base:t.atual.p});
+  const r=await pedir({tipo:'num',msg:'Comprimento do tubo na direção atual (cm):',base:t.atual.p});
   if(r.t!=='num'||!(r.v>0)) return;
   addEl({tipo:'TUBO',len:r.v});
 }
@@ -707,9 +1038,9 @@ async function comandoCurva(t){
     if(comp<1e-6) return;
     curvaETuboVetor(t,ang,v.clone().normalize(),comp);return;
   }
-  const rc=await pedir({tipo:'num',msg:'Comprimento do tubo após a curva (m):',base:t.atual.p});
+  const rc=await pedir({tipo:'num',msg:'Comprimento do tubo após a curva (cm):',base:t.atual.p});
   if(rc.t!=='num'||!(rc.v>0)) return;
-  addEl({tipo:'CURVA',ang,dir:rk.v,eIn:extCurva(t),eOut:extCurva(t)});
+  addEl({tipo:tipoCurva(t),ang,dir:rk.v,eIn:extCurva(t),eOut:extCurva(t)});
   addEl({tipo:'TUBO',len:rc.v});
 }
 async function comandoPeca(t){
@@ -720,8 +1051,13 @@ async function comandoPeca(t){
     const v=rd.v.clone().sub(t.atual.p); if(v.length()<1e-6) return;
     t.atual.d=v.normalize();
   }
+  const dn3=esc.dn3, brOut=esc.brOut; delete esc.dn3; delete esc.brOut;
   const e=addEl(esc); if(!e) return;
-  if(e.pBr) msg('Para continuar pela derivação use o comando CONTINUAR.','eco');
+  if(e.pBr&&dn3>0&&dn3<e.pBr.dn){
+    // reducao ja ligada a derivacao (trecho proprio, de onde se continua com CONTINUAR)
+    const red=adicionar({tipo:'REDUCAO',preset:'REDUCAO',dn:e.pBr.dn,dn2:dn3,eIn:e.pBr.end==='FLANGE'?'FLANGE':'PONTA',eOut:brOut,fonte:{id:e.id,port:'Br'}});
+    if(red){t.hist[t.hist.length-1].extra=red.id;msg(`Redução DN${e.pBr.dn}×DN${dn3} criada na derivação. Para continuar o ramal use CONTINUAR.`,'ok')}
+  } else if(e.pBr) msg('Para continuar pela derivação use o comando CONTINUAR.','eco');
 }
 
 async function loopRede(t){
@@ -753,12 +1089,12 @@ async function loopRede(t){
 
 /* ---------- Comandos ---------- */
 async function cmdRede(){
-  const rm=await pedir({tipo:'kw',msg:'Material da rede [DEFoFo/PVCO/PVC/PEAD] <DEFoFo>:',kw:['DEFoFo','PVCO','PVC','PEAD'],def:'DEFoFo'});
+  const rm=await pedir({tipo:'kw',msg:'Material da rede [DEFoFo/FoFo/PVCO/PVC/PEAD/Aluminio] <DEFoFo>:',kw:['DEFoFo','FoFo','PVCO','PVC','PEAD','Aluminio'],def:'DEFoFo'});
   if(rm.t==='cancel') return;
   const rd=await pedir({tipo:'num',msg:'DN do tubo (mm) <100>:',def:100});
   if(rd.t==='cancel') return;
   const dn=DNs[ix(rd.v)]; if(dn!==rd.v) msg(`DN ${rd.v} não é padrão; usando DN${dn}.`,'warn');
-  const rp=await pedir({tipo:'ponto',msg:'Ponto inicial (clique ou x,y,z):'});
+  const rp=await pedir({tipo:'ponto',msg:'Ponto inicial em cm (clique ou x,y,z):'});
   if(rp.t!=='pt') return;
   await loopRede(novoTrecho(rp.v,dn,rm.v));
 }
@@ -795,7 +1131,7 @@ function cmdLimpar(){if(!rede.length||confirm('Apagar toda a rede?')){limpar();m
 const COMANDOS={
   REDE:cmdRede, CONTINUAR:cmdContinuar, QUANT:cmdQuant, IMPRIMIR:cmdImprimir,
   VISTA:()=>vista('iso'), PLANTA:()=>vista('planta'), FRENTE:()=>vista('frente'), ZOOM:()=>vista('fit'),
-  DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, SALVAR:salvar, ABRIR:()=>$('file').click()
+  DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, SALVAR:salvarLocal, ABRIR:abrirLocal, EXPORTAR:exportarArquivo, IMPORTAR:()=>$('file').click()
 };
 async function executar(nome){
   if(ocupado){msg('Termine ou cancele (Esc) o comando atual.','warn');return}
@@ -808,7 +1144,7 @@ function executarTexto(txt){
   let t=norm(txt.trim()).replace(/^agua_/,''); if(!t&&ultimoCmd){executar(ultimoCmd);return}
   if(!t) return;
   const nomes=Object.keys(COMANDOS), n=nomes.find(x=>norm(x)===t)||(nomes.filter(x=>norm(x).startsWith(t)).length===1?nomes.find(x=>norm(x).startsWith(t)):null);
-  if(n) executar(n); else msg('Comando desconhecido: '+txt+'  (REDE, CONTINUAR, QUANT, IMPRIMIR, VISTA, PLANTA, FRENTE, ZOOM, DESFAZER, SALVAR, ABRIR)','warn');
+  if(n) executar(n); else msg('Comando desconhecido: '+txt+'  (REDE, CONTINUAR, QUANT, IMPRIMIR, VISTA, PLANTA, FRENTE, ZOOM, DESFAZER, SALVAR, ABRIR, EXPORTAR, IMPORTAR)','warn');
 }
 document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{ if(ocupado&&pend&&b.dataset.cmd!=='REDE'&&!['VISTA','PLANTA','FRENTE','ZOOM'].includes(b.dataset.cmd)){msg('Termine ou cancele (Esc) o comando atual.','warn');return} executar(b.dataset.cmd)});
 
@@ -817,87 +1153,364 @@ const VISTAS={iso:new THREE.Vector3(-1,-1,.8),planta:new THREE.Vector3(0,-.0005,
 let ultimaVista=VISTAS.iso;
 function enquadrar(dir){
   const box=new THREE.Box3().setFromObject(raiz);
-  let c=new THREE.Vector3(0,0,0),rad=3;
-  if(!box.isEmpty()){c=box.getCenter(new THREE.Vector3());rad=Math.max(box.getBoundingSphere(new THREE.Sphere()).radius,0.5)}
+  let c=new THREE.Vector3(0,0,0),rad=300;
+  if(!box.isEmpty()){c=box.getCenter(new THREE.Vector3());rad=Math.max(box.getBoundingSphere(new THREE.Sphere()).radius,20)}
   const dist=rad/Math.sin(THREE.MathUtils.degToRad(camera.fov/2))*1.05;
   camera.position.copy(c).addScaledVector(dir.clone().normalize(),dist);
-  controls.target.copy(c); camera.near=Math.max(dist/1000,0.01); camera.far=dist*50; camera.updateProjectionMatrix(); controls.update();
+  controls.target.copy(c); camera.near=Math.max(dist/2000,0.1); camera.far=dist*60; camera.updateProjectionMatrix(); controls.update();
 }
 function vista(k){if(k!=='fit')ultimaVista=VISTAS[k];enquadrar(k==='fit'?camera.position.clone().sub(controls.target):VISTAS[k])}
 function enquadrarSuave(){if(rede.length)enquadrar(camera.position.clone().sub(controls.target))}
 
-/* ---------- Dialogo de peca (como a janela P do plugin) ---------- */
-for(const dn of DNs){$('dn').add(new Option('DN'+dn,dn));$('dn2').add(new Option('DN'+dn,dn))}
-for(const [k,p] of Object.entries(PECAS)) $('tipo').add(new Option(p.nome,k));
-function preencheEnds(sel,opts,def){sel.innerHTML='';for(const o of opts)sel.add(new Option(END_NOME[o],o));sel.value=def&&opts.includes(def)?def:opts[0];sel.disabled=opts.length===1}
-function atualizaTipo(){
-  const k=$('tipo').value, t=PECAS[k], dn=+$('dn').value;
-  const show=(id,on)=>$(id).classList.toggle('hide',!on);
-  show('fAng',!!t.ang); show('fDir',!!t.dir); show('fDn2',!!t.dn2); show('fLen',!!t.len);
-  $('lDir').textContent=k==='TE'?'Direção da derivação':'Direção';
-  $('lDn2').textContent=k==='TE'?'DN da derivação':'DN de saída';
-  show('fIn',!!t.in); show('fOut',!!t.out); show('fBr',!!t.br);
-  const def=t.def||[];
-  if(t.in) preencheEnds($('eIn'),t.in,def[0]);
-  if(t.out) preencheEnds($('eOut'),t.out,def[1]);
-  if(t.br) preencheEnds($('eBr'),t.br,def[2]);
-  if(t.len) $('len').value=Math.round(t.L(dn));
-  if(t.dn2&&+$('dn2').value===dn&&k!=='TE'){const i=ix(dn);$('dn2').value=DNs[i>0?i-1:1]}
+
+function imprimir(x,y,w,h,pap){
+  const paisagem=w>=h, papel=pap, [pl,ps]=PAPEL[papel];
+  const pw=paisagem?pl:ps, ph=paisagem?ps:pl; // folha em mm na orientacao escolhida
+  const M=10, legenda=8, areaW=pw-2*M, areaH=ph-2*M-legenda;
+  // pixels de saida (200 dpi) com a mesma proporcao da janela, ajustados a area util da folha
+  const pxMm=200/25.4, esc=Math.min(areaW*pxMm/w,areaH*pxMm/h);
+  const W=Math.round(w*esc), H=Math.round(h*esc);
+  const fw=view.clientWidth, fh=view.clientHeight;
+  const bgAnt=scene.background; scene.background=new THREE.Color(0xffffff); grid.visible=false;
+  renderer.setPixelRatio(1); renderer.setSize(W,H,false);
+  camera.setViewOffset(fw,fh,x,y,w,h); camera.updateProjectionMatrix();
+  renderer.render(scene,camera);
+  const url=renderer.domElement.toDataURL('image/png');
+  camera.clearViewOffset(); scene.background=bgAnt; grid.visible=true;
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2)); ajusta();
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><title>RedesAgua</title><style>
+    @page{size:${papel} ${paisagem?'landscape':'portrait'};margin:${M}mm}
+    html,body{margin:0;padding:0;font:11px system-ui,sans-serif;color:#222}
+    .box{width:${areaW}mm;height:${areaH}mm;display:flex;align-items:center;justify-content:center;border:.3mm solid #999;box-sizing:border-box}
+    img{max-width:100%;max-height:100%;object-fit:contain}
+    .cap{height:${legenda}mm;display:flex;align-items:flex-end;justify-content:space-between}
+  </style></head><body><div class="box"><img id="i" src="${url}"></div>
+  <div class="cap"><span>RedesAgua — rede de água</span><span>${papel} ${paisagem?'paisagem':'retrato'} — ${hoje}</span></div></body></html>`;
+  f.onload=()=>{const im=f.contentDocument.getElementById('i');const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)};im.complete?go():im.onload=go};
+  document.body.appendChild(f);
+  msg(`Imprimindo janela em ${papel} ${paisagem?'paisagem':'retrato'}, ajustada à folha.`,'ok');
 }
-$('tipo').onchange=atualizaTipo; $('dn').onchange=atualizaTipo;
-$('eIn').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync&&t.out)$('eOut').value=$('eIn').value};
-$('eOut').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync)$('eIn').value=$('eOut').value};
+
+/* ---------- Dialogo de peca (igual a janela P do plugin, com previa 3D) ---------- */
+const EXT_SEL=['BOLSA','ELETRO','FLANGE','JM','PONTA','SOLDA','TERMO'];
+const NOMES_DIR=['Baixo','Cima','Direita','Esquerda'];
+const memoria={}; let ultimaFamilia=-1;
+let dnLinha=100, matLinha='DEFoFo';
+const cbFam=$('tipo'), cbDn=$('dn'), cbDn2=$('dn2'), cbIn=$('eIn'), cbOut=$('eOut'), cbBr=$('eBr'), cbDer=$('dir'), cbAng=$('ang'), cbDn3=$('dn3'), cbBrOut=$('brOut'), chkInv=$('inv'), nudL=$('len');
+for(const it of LISTA) cbFam.add(new Option(it.nome,String(LISTA.indexOf(it))));
+for(const dn of DNs) cbDn.add(new Option(String(dn),String(dn)));
+for(const c of [cbIn,cbOut,cbBr]) for(const x of EXT_SEL) c.add(new Option(END_NOME[x],x));
+for(const x of ['BOLSA','FLANGE','JM']) cbBrOut.add(new Option(END_NOME[x],x));
+for(const x of NOMES_DIR) cbDer.add(new Option(x,x));
+cbDer.value='Cima';
+for(const x of ['11.25','22.5','45','90']) cbAng.add(new Option(x.replace('.',','),x));
+cbAng.value='90';
+const itemAtual=()=>LISTA[Math.max(0,+cbFam.value)];
+const famAtual=()=>itemAtual().fam;
+const presetAtual=()=>famAtual()==='REDUCAO'?(chkInv.checked?'AUMENTO':'REDUCAO'):itemAtual().preset;
+
+function atualizarDn2(){
+  const fam=famAtual(), preset=presetAtual(), ant=cbDn2.value;
+  cbDn2.innerHTML='';
+  for(const d of DNs){
+    let ok=true;
+    if(fam==='TE') ok=d<=dnLinha;
+    else if(fam==='REDUCAO') ok=preset==='AUMENTO'?d>dnLinha:d<dnLinha;
+    if(ok) cbDn2.add(new Option(String(d),String(d)));
+  }
+  if(!cbDn2.options.length) cbDn2.add(new Option(String(dnLinha),String(dnLinha)));
+  const tem=v=>[...cbDn2.options].some(o=>o.value===v);
+  if(ant&&tem(ant)) cbDn2.value=ant;
+  else if(fam==='REDUCAO'&&preset==='AUMENTO') cbDn2.selectedIndex=0;
+  else if(fam==='REDUCAO') cbDn2.selectedIndex=cbDn2.options.length-1;
+  else if(tem(String(dnLinha))) cbDn2.value=String(dnLinha);
+  else cbDn2.selectedIndex=cbDn2.options.length-1;
+}
+function atualizarOpcoesRedDeriv(){
+  if(!cbDn2.value) return;
+  const dnDeriv=+cbDn2.value, ant=cbDn3.value;
+  cbDn3.innerHTML=''; cbDn3.add(new Option('Nenhuma','0'));
+  for(const d of DNs) if(d<dnDeriv) cbDn3.add(new Option(String(d),String(d)));
+  cbDn3.value=[...cbDn3.options].some(o=>o.value===ant)?ant:'0';
+}
+const selV=(c,v)=>{if(!c.disabled&&v!=null&&[...c.options].some(o=>o.value===v))c.value=v};
+function aplicarPadroes(){
+  const f=famAtual();
+  let padrao=(f==='CURVA'||f==='JOELHO'||f==='LUVA'||f==='LUVA_LR'||f==='BORBOLETA')?'BOLSA':'FLANGE';
+  if(matLinha==='PEAD'&&(f==='CURVA'||f==='JOELHO')) padrao='ELETRO';
+  if(matLinha==='Aluminio'&&(f==='CURVA'||f==='JOELHO')) padrao='SOLDA';
+  cbIn.value=cbOut.value=cbBr.value=padrao;
+  if(f==='CAP'||f==='VENTOSA') cbIn.value='FLANGE';
+  if(f==='FLANGE'){cbIn.value='BOLSA';cbOut.value='FLANGE'}
+  if(f==='JD') nudL.value=Cat.jdLen(+cbDn.value||dnLinha);
+  switch(presetAtual()){
+    case 'PONTAFLANGE': cbIn.value='FLANGE';cbOut.value='PONTA';break;
+    case 'BOLSAFLANGE': cbIn.value='BOLSA';cbOut.value='FLANGE';break;
+    case 'CARRETEL': cbIn.value='FLANGE';cbOut.value='FLANGE';break;
+    case 'SOLDA': cbIn.value='SOLDA';cbOut.value='SOLDA';break;
+    case 'ELETRO': cbIn.value='ELETRO';cbOut.value='ELETRO';break;
+    case 'TERMO': cbIn.value='TERMO';cbOut.value='TERMO';break;
+  }
+}
+function setLabel(id,txt,on){const el=$(id);el.textContent=txt;el.classList.toggle('off',!on)}
+function enable(c,on){c.disabled=!on;const l=document.querySelector('label[for="'+c.id+'"]');if(l)l.classList.toggle('off',!on)}
+function atualizarCampos(){
+  const fam=famAtual(), preset=presetAtual();
+  const y=fam==='Y', te=fam==='TE', red=fam==='REDUCAO', reta=fam==='RETA'||fam==='JD', luva=fam==='LUVA', jd=fam==='JD';
+  const jm=fam==='JM', cap=fam==='CAP', lr=fam==='LUVA_LR', curva=fam==='CURVA'||fam==='JOELHO', vent=fam==='VENTOSA', fl=fam==='FLANGE';
+  const solda=fam==='CURVA'&&itemAtual().preset==='SOLDA';
+  atualizarDn2();
+  enable(cbDn,!(te||y||red)); if(cbDn.disabled) cbDn.value=String(dnLinha);
+  enable(cbDn2,te||y||red||lr);
+  $('lDn2').textContent=(te||y)?'DN da derivação':(preset==='AUMENTO'?'DN maior (saída)':(preset==='REDUCAO'?'DN menor (saída)':'DN de saída'));
+  enable(cbBr,te||y);
+  enable(cbDn3,te); enable(cbBrOut,te);
+  enable(cbDer,te||y||curva);
+  $('lDir').textContent=(te||y)?'Direção da derivação':'Direção da curva';
+  enable(cbAng,curva); enable(chkInv,red); enable(nudL,reta);
+  enable(cbIn,!(luva||jm||lr||fl||solda||jd));
+  enable(cbOut,!(luva||jm||lr||cap||vent||fl||solda||jd));
+  if(lr||(luva&&preset==='')){cbIn.value='BOLSA';cbOut.value='BOLSA'}
+  if(jd){cbIn.value='FLANGE';cbOut.value='FLANGE'}
+  if(jm){cbIn.value='JM';cbOut.value='JM'}
+  if((cap||vent)&&cbIn.value==='PONTA') cbIn.value='FLANGE';
+  if(fl){cbIn.value='BOLSA';cbOut.value='FLANGE'}
+  if(te&&cbDn2.value&&+cbDn2.value>dnLinha) cbDn2.value=String(dnLinha);
+  atualizarOpcoesRedDeriv();
+  $('pcDesc').textContent=itemAtual().desc;
+}
+function restaurar(){
+  const s=memoria[cbFam.value]; if(!s) return;
+  if(!chkInv.disabled&&chkInv.checked!==s.inv){chkInv.checked=s.inv;atualizarCampos()}
+  selV(cbDn,s.dn);selV(cbDn2,s.dn2);selV(cbIn,s.in);selV(cbOut,s.out);selV(cbBr,s.br);selV(cbDn3,s.dn3);selV(cbBrOut,s.brOut);selV(cbDer,s.der);selV(cbAng,s.ang);
+  if(!nudL.disabled&&s.len>0) nudL.value=s.len;
+}
+function memorizar(){
+  ultimaFamilia=+cbFam.value;
+  memoria[cbFam.value]={dn:cbDn.value,dn2:cbDn2.value,in:cbIn.value,out:cbOut.value,br:cbBr.value,dn3:cbDn3.value,brOut:cbBrOut.value,der:cbDer.value,ang:cbAng.value,inv:chkInv.checked,len:+nudL.value};
+}
+// parametros atuais do dialogo -> comando de peca (sem a fonte)
+function paramAtual(){
+  const it=itemAtual(), fam=it.fam, dn=+cbDn.value||dnLinha;
+  const cmd={tipo:fam,preset:it.preset,dn,eIn:cbIn.value,eOut:cbOut.value,eBr:cbBr.value};
+  if(!cbDn2.disabled) cmd.dn2=+cbDn2.value;
+  if(!cbDer.disabled) cmd.dir=cbDer.value;
+  if(!cbAng.disabled) cmd.ang=+cbAng.value;
+  if(!nudL.disabled) cmd.len=+nudL.value;
+  if(fam==='TE'){cmd.dn3=+cbDn3.value;cmd.brOut=cbBrOut.value}
+  return cmd;
+}
+
+/* previa 3D da peca (mesma geometria do desenho) */
+const prevCanvas=$('prev');
+const prevRenderer=new THREE.WebGLRenderer({canvas:prevCanvas,antialias:true});
+prevRenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const prevScene=new THREE.Scene(); prevScene.background=new THREE.Color(0xffffff); luzes(prevScene);
+const prevCam=new THREE.PerspectiveCamera(30,1,1,50000); prevCam.up.set(0,0,1);
+const prevRoot=new THREE.Group(); prevScene.add(prevRoot);
+let pv={yaw:0.6,pitch:0.42,zoom:1,dist:100,ctr:new THREE.Vector3(),arrasta:false,x:0,y:0};
+function desenhaPrev(){
+  const w=prevCanvas.clientWidth||320,h=prevCanvas.clientHeight||190;
+  if(prevCanvas.width!==Math.round(w*prevRenderer.getPixelRatio())){prevRenderer.setSize(w,h,false)}
+  prevCam.aspect=w/h; prevCam.updateProjectionMatrix();
+  const cp=Math.cos(pv.pitch), d=pv.dist/pv.zoom;
+  // olhando para a peca por -Y/+X (o fluxo vai de -X para +X), com Z para cima
+  prevCam.position.set(pv.ctr.x+d*cp*Math.sin(pv.yaw),pv.ctr.y-d*cp*Math.cos(pv.yaw),pv.ctr.z+d*Math.sin(pv.pitch));
+  prevCam.lookAt(pv.ctr);
+  prevRenderer.render(prevScene,prevCam);
+}
+function montaPrev(){
+  while(prevRoot.children.length){const o=prevRoot.children.pop();descarta(o)}
+  const p=paramAtual(); p.id=0; p.fonte={start:true};
+  try{
+    const src={p:new V3(0,0,0),d:new V3(1,0,0),dn:p.dn,mat:matLinha};
+    const e=construir(p,src); prevRoot.add(e.grupo);
+    if(p.tipo==='TE'&&p.dn3>0&&e.pBr){
+      const br=e.eBr==='FLANGE'?'FLANGE':'PONTA';
+      const r=construir({tipo:'REDUCAO',preset:'REDUCAO',dn:p.dn2,dn2:p.dn3,eIn:br,eOut:p.brOut,fonte:{start:true},id:0},{p:e.pBr.p,d:e.pBr.d,dn:p.dn2,mat:matLinha});
+      prevRoot.add(r.grupo);
+    }
+  }catch(err){console.error(err)}
+  const box=new THREE.Box3().setFromObject(prevRoot);
+  if(!box.isEmpty()){
+    pv.ctr=box.getCenter(new V3());
+    const rad=Math.max(box.getBoundingSphere(new THREE.Sphere()).radius,1);
+    pv.dist=rad/Math.sin(THREE.MathUtils.degToRad(prevCam.fov/2))*1.05;
+    prevCam.near=Math.max(pv.dist/500,0.05);prevCam.far=pv.dist*20;
+  }
+  desenhaPrev();
+}
+prevCanvas.addEventListener('pointerdown',e=>{pv.arrasta=true;pv.x=e.clientX;pv.y=e.clientY;prevCanvas.setPointerCapture(e.pointerId)});
+prevCanvas.addEventListener('pointermove',e=>{if(!pv.arrasta)return;pv.yaw-=(e.clientX-pv.x)*0.01;pv.pitch=Math.max(-1.4,Math.min(1.4,pv.pitch+(e.clientY-pv.y)*0.01));pv.x=e.clientX;pv.y=e.clientY;desenhaPrev()});
+prevCanvas.addEventListener('pointerup',()=>{pv.arrasta=false});
+prevCanvas.addEventListener('wheel',e=>{e.preventDefault();pv.zoom=Math.max(0.3,Math.min(8,pv.zoom*(e.deltaY<0?1.12:1/1.12)));desenhaPrev()},{passive:false});
+prevCanvas.addEventListener('dblclick',()=>{pv.yaw=0.6;pv.pitch=0.42;pv.zoom=1;desenhaPrev()});
+
+cbFam.onchange=()=>{aplicarPadroes();atualizarCampos();restaurar();montaPrev()};
+cbDn2.onchange=()=>{atualizarOpcoesRedDeriv();montaPrev()};
+chkInv.onchange=()=>{atualizarCampos();montaPrev()};
+for(const c of [cbDn,cbIn,cbOut,cbBr,cbDer,cbAng,cbDn3,cbBrOut]) c.onchange=()=>{if(c===cbDn&&famAtual()==='JD')nudL.value=Cat.jdLen(+cbDn.value);montaPrev()};
+nudL.onchange=montaPrev; nudL.oninput=montaPrev;
+
 function pedirPeca(dn,matl){
   return new Promise(res=>{
-    const dlg=$('dlgPeca'); $('dn').value=dn; $('dn2').value=DNs[Math.max(0,ix(dn)-1)]; atualizaTipo();
-    $('dlgMat').textContent='Material: '+matl;
-    let ok=false;
-    $('pecaOk').onclick=ev=>{
-      ev.preventDefault();
-      const k=$('tipo').value,t=PECAS[k],d=+$('dn').value;
-      if(t.dn2&&k!=='TE'&&+$('dn2').value===d){$('pecaErro').textContent='O DN de saída deve ser diferente do DN de entrada.';return}
-      const cmd={tipo:k,dn:d};
-      if(t.ang) cmd.ang=+$('ang').value;
-      if(t.dir) cmd.dir=$('dir').value;
-      if(t.dn2) cmd.dn2=+$('dn2').value;
-      if(t.len) cmd.len=+$('len').value;
-      if(t.in) cmd.eIn=$('eIn').value;
-      if(t.out) cmd.eOut=$('eOut').value;
-      if(t.br) cmd.eBr=$('eBr').value;
-      ok=cmd; dlg.close();
-    };
-    dlg.onclose=()=>res(ok||null);
-    $('pecaErro').textContent=''; dlg.showModal();
+    const dlg=$('dlgPeca'); dnLinha=dn; matLinha=matl;
+    $('pcHead').textContent='Linha atual: DN'+dn+'   ·   Material: '+matl;
+    cbDn.value=String(dn);
+    let ok=null;
+    const iTe=LISTA.findIndex(l=>l.fam==='TE');
+    cbFam.value=String(ultimaFamilia>=0?ultimaFamilia:iTe);
+    atualizarOpcoesRedDeriv(); aplicarPadroes(); atualizarCampos(); restaurar();
+    $('pecaOk').onclick=ev=>{ev.preventDefault();memorizar();ok=paramAtual();dlg.close()};
+    $('pecaCancel').onclick=()=>dlg.close();
+    dlg.onclose=()=>res(ok);
+    dlg.showModal(); pv.yaw=0.6;pv.pitch=0.42;pv.zoom=1; montaPrev();
   });
 }
-$('pecaCancel').onclick=()=>$('dlgPeca').close();
 
-/* ---------- Salvar / abrir ---------- */
-function salvar(){
-  const dados=JSON.stringify({app:'RedesAgua-Web',versao:2,cmds:rede.map(e=>e.cmd)});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dados],{type:'application/json'}));a.download='rede-agua.json';a.click();
-  msg('Projeto salvo (rede-agua.json).','ok');
+/* ---------- Salvar local / exportar ---------- */
+const CHAVE='redesagua.projeto', CHAVE_AUTO='redesagua.auto';
+const projetoJson=()=>JSON.stringify({app:'RedesAgua-Web',versao:3,unidade:'cm',salvo:new Date().toISOString(),cmds:rede.map(e=>e.cmd)});
+const hora=()=>new Date().toLocaleString('pt-BR');
+function carregarProjeto(texto){
+  const j=JSON.parse(texto); if(j.app!=='RedesAgua-Web') throw new Error('arquivo inválido');
+  if(j.versao<3) throw new Error('arquivo de uma versão antiga (em metros); refaça a rede em cm');
+  limpar(); for(const c of j.cmds) if(!adicionar(c)) throw new Error('falha ao reconstruir a rede');
+  enquadrar(VISTAS.iso);
+  return j;
 }
+function salvarLocal(){
+  try{localStorage.setItem(CHAVE,projetoJson());msg(`Projeto salvo neste navegador (${rede.length} elemento(s)) em ${hora()}.`,'ok')}
+  catch(err){msg('Não foi possível salvar no navegador: '+err.message,'warn')}
+}
+function abrirLocal(){
+  let t=null; try{t=localStorage.getItem(CHAVE)}catch(err){}
+  if(!t){msg('Não há projeto salvo neste navegador. Use SALVAR primeiro.','warn');return}
+  if(rede.length&&!confirm('Substituir a rede atual pelo projeto salvo neste navegador?')) return;
+  try{const j=carregarProjeto(t);msg(`Projeto aberto (salvo em ${new Date(j.salvo).toLocaleString('pt-BR')}).`,'ok')}catch(err){msg('Não foi possível abrir: '+err.message,'warn')}
+}
+function exportarArquivo(){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([projetoJson()],{type:'application/json'}));a.download='rede-agua.json';a.click();
+  msg('Arquivo rede-agua.json gerado.','ok');
+}
+let tAuto=null;
+function aoMudar(){clearTimeout(tAuto);tAuto=setTimeout(()=>{try{localStorage.setItem(CHAVE_AUTO,projetoJson())}catch(err){}},400)}
 $('file').onchange=async ev=>{
   const f=ev.target.files[0]; if(!f) return;
-  try{
-    const j=JSON.parse(await f.text()); if(j.app!=='RedesAgua-Web') throw new Error('arquivo inválido');
-    limpar(); for(const c of j.cmds) if(!adicionar(c)) throw new Error('falha ao reconstruir a rede');
-    enquadrar(VISTAS.iso); msg('Projeto aberto.','ok');
-  }catch(err){msg('Não foi possível abrir: '+err.message,'warn')}
+  try{carregarProjeto(await f.text());msg('Arquivo importado.','ok')}catch(err){msg('Não foi possível importar: '+err.message,'warn')}
   ev.target.value='';
 };
 $('fechar').onclick=()=>$('dlg').close();
+$('csv').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ultimoCsv],{type:'text/csv;charset=utf-8'}));a.download='Quantitativo_RedesAgua.csv';a.click()};
 $('ajuda').onclick=()=>{$('dlgAjuda').showModal();$('dlgAjuda').scrollTop=0};
 $('ajudaFechar').onclick=()=>$('dlgAjuda').close();
-$('csv').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ultimoCsv],{type:'text/csv;charset=utf-8'}));a.download='Quantitativo_RedesAgua.csv';a.click()};
+
+/* ---------- Hover sobre as pecas ---------- */
+const hov=$('hov'); let hovId=null, hovRaf=0, hovEv=null; const matHi=new Map();
+function hiMat(m){let h=matHi.get(m);if(!h){h=m.clone();h.emissive=new THREE.Color(0x2f6fb0);h.emissiveIntensity=0.55;matHi.set(m,h)}return h}
+function pinta(id,on){
+  const e=byId(id); if(!e) return;
+  e.grupo.traverse(o=>{if(!o.isMesh)return;if(on){o.userData.m0=o.userData.m0||o.material;o.material=hiMat(o.userData.m0)}else if(o.userData.m0)o.material=o.userData.m0});
+}
+function textoPeca(e){
+  const dn=e.dn2?`DN${e.dn} × DN${e.dn2}`:`DN${e.dn}`;
+  const ex=[`Entrada: ${END_NOME[e.eIn]}`];
+  if(e.fam!=='TUBO'){ if(e.pOut) ex.push(`Saída: ${END_NOME[e.eOut]}`); else ex.push('Fim da rede'); if(e.pBr) ex.push(`Derivação: ${END_NOME[e.eBr]} DN${e.pBr.dn}`) }
+  const comp=e.fam==='TUBO'?`Comprimento: ${fmt(e.len)} cm`:(e.ang?`Ângulo: ${e.ang}°`:`Comprimento: ${fmt(e.len)} cm`);
+  return [`#${e.id}  ${e.nome}`,`${dn} · ${e.mat}`,ex.join(' · '),comp];
+}
+function esconderHover(){if(hovId!=null){pinta(hovId,false);hovId=null}hov.classList.add('hide')}
+function atualizaHover(){
+  hovRaf=0; const ev=hovEv; if(!ev) return;
+  if(ev.buttons) {esconderHover();return}
+  mouseRay(ev); const hits=ray.intersectObjects(raiz.children,true);
+  let id=null; for(const h of hits){let g=h.object;while(g&&g.userData.id==null)g=g.parent;if(g){id=g.userData.id;break}}
+  if(id!==hovId){if(hovId!=null)pinta(hovId,false);hovId=id;if(id!=null)pinta(id,true)}
+  if(id==null){hov.classList.add('hide');return}
+  const e=byId(id); if(!e) return;
+  const t=textoPeca(e); hov.innerHTML=`<b>${t[0]}</b><br>${t.slice(1).join('<br>')}`;
+  const b=canvas.getBoundingClientRect(); hov.classList.remove('hide');
+  let x=ev.clientX-b.left+16,y=ev.clientY-b.top+18;
+  if(x+hov.offsetWidth>b.width-4) x=ev.clientX-b.left-hov.offsetWidth-12;
+  if(y+hov.offsetHeight>b.height-4) y=ev.clientY-b.top-hov.offsetHeight-12;
+  hov.style.left=Math.max(4,x)+'px'; hov.style.top=Math.max(4,y)+'px';
+}
+let hovT=0;
+canvas.addEventListener('pointermove',ev=>{hovEv=ev;const t=performance.now();if(t-hovT>35){hovT=t;atualizaHover()}});
+canvas.addEventListener('pointerleave',()=>{hovEv=null;esconderHover()});
+
+/* ---------- Quantitativo ---------- */
+function quantitativo(){
+  const tubos={},pecas={},verif=[],jun={};
+  const get=(o,k,fn)=>o[k]||(o[k]=fn());
+  for(const e of rede){
+    if(e.fam==='TUBO') get(tubos,`${e.mat}|${e.dn}`,()=>({mat:e.mat,dn:e.dn,cm:0})).cm+=e.len;
+    else{
+      const ends=[e.eIn,e.pOut?e.eOut:null,e.pBr?e.eBr:null].filter(Boolean).map(x=>END_NOME[x]).join(' / ');
+      const dn=e.dn2?`DN${e.dn}×DN${e.dn2}`:`DN${e.dn}`;
+      const nome=e.nome+(e.ang?` ${String(e.ang).replace('.',',')}°`:'');
+      get(pecas,`${e.nome}|${dn}|${e.ang}|${ends}`,()=>({nome,dn,ends,q:0})).q++;
+    }
+    if(e.from){
+      const o=byId(e.from.id), port=e.from.port==='Br'?o.pBr:e.from.port==='In'?{end:o.eIn}:o.pOut, kind=compat(port.end,e.eIn);
+      if(!kind) verif.push(`Ligação incompatível: ${END_NOME[port.end]} → ${END_NOME[e.eIn]} entre #${o.id} ${o.nome} e #${e.id} ${e.nome}.`);
+      else get(jun,`${kind}|${e.dn}`,()=>({kind,dn:e.dn,q:0})).q++;
+    }
+  }
+  for(const e of rede){
+    if(e.pOut&&e.pOut.end==='FLANGE'&&!usado(e.id,'Out')) verif.push(`Flange sem par: saída de #${e.id} ${e.nome} (DN${e.pOut.dn}).`);
+    if(e.pBr&&e.pBr.end==='FLANGE'&&!usado(e.id,'Br')) verif.push(`Flange sem par: derivação de #${e.id} ${e.nome} (DN${e.pBr.dn}).`);
+    if(!e.from&&e.eIn==='FLANGE'&&!usado(e.id,'In')) verif.push(`Flange sem par: entrada de #${e.id} ${e.nome} (DN${e.dn}).`);
+  }
+  const lin=[];
+  for(const x of Object.values(tubos).sort((a,b)=>a.dn-b.dn)) lin.push(['Tubos',`Tubo ${x.mat} DN${x.dn}`,'m',(x.cm/100).toFixed(2).replace('.',',')]);
+  for(const x of Object.values(pecas)) lin.push(['Peças',`${x.nome} ${x.dn} (${x.ends})`,'un',x.q]);
+  for(const x of Object.values(jun)){
+    if(x.kind==='FLANGE'){
+      const n=Cat.parN(x.dn),m=Cat.parM(x.dn),L=Cat.parLen(x.dn);
+      lin.push(['Juntas flangeadas',`Parafuso M${m} x ${L} (DN${x.dn})`,'un',n*x.q]);
+      lin.push(['Juntas flangeadas',`Porca M${m} (DN${x.dn})`,'un',n*x.q]);
+      lin.push(['Juntas flangeadas',`Arruela M${m} (DN${x.dn})`,'un',2*n*x.q]);
+      lin.push(['Juntas flangeadas',`Junta de vedação DN${x.dn}`,'un',x.q]);
+    } else if(x.kind==='JM'){
+      const n=Cat.jmN(x.dn),m=Cat.jmM(x.dn),L=Cat.jmParLen(x.dn);
+      lin.push(['Juntas mecânicas',`Anel de borracha DN${x.dn}`,'un',x.q]);
+      lin.push(['Juntas mecânicas',`Contraflange DN${x.dn}`,'un',x.q]);
+      lin.push(['Juntas mecânicas',`Parafuso T M${m} x ${L} (DN${x.dn})`,'un',n*x.q]);
+      lin.push(['Juntas mecânicas',`Porca M${m} (DN${x.dn})`,'un',n*x.q]);
+    } else if(x.kind==='ELASTICA') lin.push(['Juntas elásticas',`Anel de borracha DN${x.dn}`,'un',x.q]);
+    else lin.push(['Juntas de PEAD / soldadas',`Junta de ${x.kind==='ELETRO'?'eletrofusão':x.kind==='TERMO'?'termofusão':'solda'} DN${x.dn}`,'un',x.q]);
+  }
+  return {lin,verif};
+}
+let ultimoCsv='';
+function mostraQuant(){
+  const {lin,verif}=quantitativo();
+  let h='<h2 style="margin:0 0 4px;font-size:17px">Quantitativo</h2>';
+  for(const c of [...new Set(lin.map(l=>l[0]))]){
+    h+=`<h3>${c}</h3><table><tr><th>Descrição</th><th>Un.</th><th class="n">Qtd.</th></tr>`;
+    for(const l of lin.filter(x=>x[0]===c)) h+=`<tr><td>${l[1]}</td><td>${l[2]}</td><td class="n">${l[3]}</td></tr>`;
+    h+='</table>';
+  }
+  if(verif.length) h+='<h3>Verificar</h3><ul>'+verif.map(v=>`<li class="warnli">${v}</li>`).join('')+'</ul>';
+  $('dlgBody').innerHTML=h;
+  ultimoCsv='﻿Categoria;Descrição;Unidade;Quantidade\r\n'+lin.map(l=>l.join(';')).join('\r\n')
+    +(verif.length?'\r\n'+verif.map(v=>'Verificar;'+v+';;').join('\r\n'):'');
+  $('dlg').showModal();
+}
 
 /* ---------- Inicio ---------- */
 enquadrar(VISTAS.iso);
-msg('RedesAgua Web — digite REDE (ou use a barra acima). Enter ou botão direito = Fim, Esc = cancelar, F8 = orto, F3 = snap.','eco');
-msg('Botão direito + arrastar = órbita, botão do meio = pan, roda = zoom. Digite uma distância (m) para seguir na direção do cursor.','eco');
+msg('RedesAgua Web — todas as medidas em centímetros (cm). Digite REDE (ou use a barra acima); clique em ? para ver os comandos.','eco');
+msg('Enter ou botão direito = Fim, Esc = cancelar, F8 = orto, F3 = snap. Digite uma distância (cm) para seguir na direção do cursor.','eco');
+try{
+  const t=localStorage.getItem(CHAVE_AUTO);
+  if(t){const j=JSON.parse(t);if(j.versao>=3&&j.cmds&&j.cmds.length){carregarProjeto(t);msg(`Rede restaurada do último uso (${rede.length} elemento(s)). Use LIMPAR para começar do zero.`,'ok')}}
+}catch(err){console.error(err)}
 promptEl.textContent='Comando:'; inp.focus();
-window.__rede={rede,adicionar,quantitativo,executar,executarTexto};
+window.__rede={rede,adicionar,quantitativo,executar,executarTexto,construir,LISTA};
 
 </script>
 </body>
