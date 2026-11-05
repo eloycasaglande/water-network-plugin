@@ -5,42 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RedesAgua Web</title>
 <style>
-:root{--bg:#f4f6f8;--panel:#fff;--ink:#1d2733;--mut:#5d6b7a;--line:#d9e0e7;--acc:#1f6fb2;--acc-ink:#fff;--warn:#b4531a;--ok:#1d7a4a}
-@media (prefers-color-scheme:dark){:root{--bg:#10161d;--panel:#18212b;--ink:#e6edf3;--mut:#93a1b0;--line:#2b3744;--acc:#4a9be0;--acc-ink:#07131f;--warn:#e89a62;--ok:#5fcf93}}
+:root{--bg:#f4f6f8;--panel:#fff;--ink:#1d2733;--mut:#5d6b7a;--line:#d9e0e7;--acc:#1f6fb2;--acc-ink:#fff;--warn:#b4531a;--ok:#1d7a4a;--cmd:#0b3d6e}
+@media (prefers-color-scheme:dark){:root{--bg:#10161d;--panel:#18212b;--ink:#e6edf3;--mut:#93a1b0;--line:#2b3744;--acc:#4a9be0;--acc-ink:#07131f;--warn:#e89a62;--ok:#5fcf93;--cmd:#8cc4f5}}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
-#app{display:grid;grid-template-columns:340px 1fr;height:100%}
-#side{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:12px 14px}
-h1{font-size:17px;margin:0 0 2px}
-.sub{color:var(--mut);font-size:12px;margin-bottom:10px}
-fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 10px;padding:8px 10px 10px}
-legend{font-weight:600;padding:0 6px;font-size:13px}
-label{display:block;font-size:12px;color:var(--mut);margin:6px 0 2px}
-select,input[type=number],input[type=text]{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
-.row{display:flex;gap:6px}.row>*{flex:1;min-width:0}
-button{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+#app{display:grid;grid-template-rows:auto 1fr auto;height:100%}
+#bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 10px;background:var(--panel);border-bottom:1px solid var(--line)}
+#bar b{margin-right:8px}
+#bar .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+button{padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+button:hover{filter:brightness(.95)}
 button.pri{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
-button:hover{filter:brightness(.96)}
-.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+button.tog.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+#main{position:relative;min-height:0}
+#view{position:absolute;inset:0;cursor:crosshair}
+#view canvas{display:block;width:100%;height:100%;touch-action:none}
+#coord{position:absolute;right:10px;bottom:8px;font:12px ui-monospace,Consolas,monospace;color:var(--mut);background:var(--panel);padding:2px 8px;border-radius:4px;border:1px solid var(--line)}
+#tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px}
+#selrect{position:absolute;border:2px dashed var(--acc);background:rgba(31,111,178,.15);pointer-events:none}
 .hide{display:none!important}
-#main{position:relative;min-width:0;min-height:0}
-#view{position:absolute;inset:0}
-#view canvas{display:block;width:100%;height:100%}
-#status{position:absolute;left:10px;bottom:10px;right:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;pointer-events:none}
-#status.warn{color:var(--warn)}#status.ok{color:var(--ok)}
-#tools{position:absolute;top:10px;right:10px;display:flex;gap:6px}
-#sel{position:absolute;inset:0;cursor:crosshair;background:rgba(31,111,178,.06);z-index:5}
-#selrect{position:absolute;border:2px dashed var(--acc);background:rgba(31,111,178,.15)}
-#selhint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:6px}
+#cmd{background:var(--panel);border-top:2px solid var(--cmd);padding:6px 10px 8px;font:13px ui-monospace,Consolas,monospace}
+#hist{height:84px;overflow:auto;color:var(--mut)}
+#hist .warn{color:var(--warn)}#hist .ok{color:var(--ok)}#hist .cmd{color:var(--cmd);font-weight:700}#hist .eco{opacity:.85}
+#line{display:flex;gap:8px;align-items:center;margin-top:4px}
+#prompt{color:var(--cmd);font-weight:600;white-space:nowrap}
+#inp{flex:1;min-width:80px;border:1px solid var(--line);border-radius:4px;padding:4px 8px;background:var(--bg);color:var(--ink);font:inherit}
+#chips{display:flex;gap:4px;flex-wrap:wrap}
+#chips button{padding:2px 8px;font:12px system-ui}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:880px;width:94vw;max-height:88vh;padding:14px}
+dialog#dlgPeca{max-width:420px}
 dialog::backdrop{background:rgba(0,0,0,.4)}
+label{display:block;font-size:12px;color:var(--mut);margin:6px 0 2px}
+select,input[type=number]{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.row{display:flex;gap:6px}.row>*{flex:1;min-width:0}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 table{border-collapse:collapse;width:100%;margin:6px 0 12px;font-size:13px}
 th,td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 h3{margin:10px 0 0;font-size:14px}
 .warnli{color:var(--warn)}
-@media (max-width:780px){#app{grid-template-columns:1fr;grid-template-rows:auto 60vh}#side{max-height:50vh}}
+#pecaErro{color:var(--warn);font-size:12px;margin-top:6px}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
@@ -48,78 +53,59 @@ h3{margin:10px 0 0;font-size:14px}
 </head>
 <body>
 <div id="app">
-<aside id="side">
-  <h1>RedesAgua Web</h1>
-  <div class="sub">Redes de água em 3D no navegador. Dimensões provisórias: confira com o catálogo do fabricante.</div>
-
-  <fieldset><legend>Continuar de</legend>
-    <select id="fonte"></select>
-    <div id="novo">
-      <div class="row">
-        <div><label>X (m)</label><input type="number" id="x0" value="0" step="any"></div>
-        <div><label>Y (m)</label><input type="number" id="y0" value="0" step="any"></div>
-        <div><label>Z (m)</label><input type="number" id="z0" value="0" step="any"></div>
-      </div>
-      <div class="row">
-        <div><label>Sentido inicial</label><select id="d0"><option value="1,0,0">+X (Leste)</option><option value="0,1,0">+Y (Norte)</option><option value="-1,0,0">−X (Oeste)</option><option value="0,-1,0">−Y (Sul)</option><option value="0,0,1">+Z (Cima)</option><option value="0,0,-1">−Z (Baixo)</option></select></div>
-        <div><label>Material</label><select id="mat"><option>DEFoFo</option><option>PVCO</option><option>PVC</option><option>PEAD</option></select></div>
-        <div><label>DN</label><select id="dn"></select></div>
-      </div>
-    </div>
-  </fieldset>
-
-  <fieldset><legend>Tubo</legend>
-    <label>Comprimento (m)</label><input type="number" id="ltubo" value="6" min="0.1" step="any">
-    <div class="btns"><button class="pri" id="addTubo">Adicionar tubo</button></div>
-  </fieldset>
-
-  <fieldset><legend>Peça / curva</legend>
-    <label>Tipo</label><select id="tipo"></select>
-    <div class="row" id="fAngDir">
-      <div id="fAng"><label>Ângulo</label><select id="ang"><option>90</option><option>45</option><option>22.5</option><option>11.25</option></select></div>
-      <div id="fDir"><label id="lDir">Direção</label><select id="dir"><option>Direita</option><option>Esquerda</option><option>Cima</option><option>Baixo</option></select></div>
-    </div>
-    <div class="row">
-      <div id="fDn2"><label id="lDn2">DN 2</label><select id="dn2"></select></div>
-      <div id="fLen"><label>Comprimento (mm)</label><input type="number" id="len" min="20" step="10"></div>
-    </div>
-    <div class="row">
-      <div id="fIn"><label>Entrada</label><select id="eIn"></select></div>
-      <div id="fOut"><label>Saída</label><select id="eOut"></select></div>
-      <div id="fBr"><label>Derivação</label><select id="eBr"></select></div>
-    </div>
-    <div class="btns"><button class="pri" id="addPeca">Adicionar peça</button></div>
-  </fieldset>
-
-  <fieldset><legend>Projeto</legend>
-    <div class="btns">
-      <button id="undo">Desfazer</button><button id="clear">Limpar</button>
-      <button id="quant">Quantitativo</button>
-      <button id="save">Salvar</button><button id="load">Abrir</button>
-    </div>
-    <input type="file" id="file" accept=".json,application/json" class="hide">
-  </fieldset>
-
-  <fieldset><legend>Imprimir</legend>
-    <div class="row">
-      <div><label>Papel</label><select id="papel"><option value="A4">A4</option><option value="A3" selected>A3</option></select></div>
-    </div>
-    <div class="btns"><button class="pri" id="print">Selecionar janela e imprimir</button></div>
-    <div class="sub" style="margin:6px 0 0">Arraste um retângulo sobre o desenho. Retrato ou paisagem é escolhido pela proporção da janela e a imagem é ajustada à folha.</div>
-  </fieldset>
-</aside>
-
-<main id="main">
+<div id="bar">
+  <b>RedesAgua Web</b>
+  <button class="pri" data-cmd="REDE">Rede</button>
+  <button data-cmd="CONTINUAR">Continuar</button>
+  <button data-cmd="QUANT">Quantitativo</button>
+  <button data-cmd="IMPRIMIR">Imprimir</button>
+  <span class="sep"></span>
+  <button data-cmd="DESFAZER">Desfazer</button>
+  <button data-cmd="LIMPAR">Limpar</button>
+  <button data-cmd="SALVAR">Salvar</button>
+  <button data-cmd="ABRIR">Abrir</button>
+  <span class="sep"></span>
+  <button data-cmd="VISTA">Iso</button>
+  <button data-cmd="PLANTA">Planta</button>
+  <button data-cmd="FRENTE">Frente</button>
+  <button data-cmd="ZOOM">Zoom ext.</button>
+  <span class="sep"></span>
+  <button class="tog" id="orto" title="F8">Orto</button>
+  <button class="tog" id="snap" title="F3">Snap</button>
+  <input type="file" id="file" accept=".json,application/json" class="hide">
+</div>
+<div id="main">
   <div id="view"></div>
-  <div id="tools">
-    <button data-v="iso">Isométrica</button><button data-v="planta">Planta</button><button data-v="frente">Frente</button><button data-v="fit">Enquadrar</button>
-  </div>
-  <div id="status">Escolha o ponto inicial e adicione tubos e peças.</div>
-</main>
+  <div id="tip" class="hide"></div>
+  <div id="selrect" class="hide"></div>
+  <div id="coord"></div>
+</div>
+<div id="cmd">
+  <div id="hist"></div>
+  <div id="line"><span id="prompt">Comando:</span><input id="inp" autocomplete="off" spellcheck="false"><div id="chips"></div></div>
+</div>
 </div>
 
 <dialog id="dlg"><div id="dlgBody"></div>
   <div class="btns"><button class="pri" id="csv">Baixar CSV</button><button id="fechar">Fechar</button></div>
+</dialog>
+
+<dialog id="dlgPeca">
+  <h3 style="margin:0 0 4px">Peça</h3><div id="dlgMat" style="color:var(--mut);font-size:12px"></div>
+  <label>Tipo</label><select id="tipo"></select>
+  <div class="row"><div><label>DN</label><select id="dn"></select></div><div id="fDn2"><label id="lDn2">DN de saída</label><select id="dn2"></select></div></div>
+  <div class="row">
+    <div id="fAng"><label>Ângulo</label><select id="ang"><option>90</option><option>45</option><option>22.5</option><option>11.25</option></select></div>
+    <div id="fDir"><label id="lDir">Direção</label><select id="dir"><option>Direita</option><option>Esquerda</option><option>Cima</option><option>Baixo</option></select></div>
+    <div id="fLen"><label>Comprimento (mm)</label><input type="number" id="len" min="20" step="10"></div>
+  </div>
+  <div class="row">
+    <div id="fIn"><label>Entrada</label><select id="eIn"></select></div>
+    <div id="fOut"><label>Saída</label><select id="eOut"></select></div>
+    <div id="fBr"><label>Derivação</label><select id="eBr"></select></div>
+  </div>
+  <div id="pecaErro"></div>
+  <div class="btns"><button class="pri" id="pecaOk">OK</button><button id="pecaCancel">Cancelar</button></div>
 </dialog>
 
 <script type="module">
@@ -243,12 +229,13 @@ function resolve(cmd){
   const f=cmd.fonte;
   if(f.start) return {p:V(f.start.p),d:V(f.start.d).normalize(),dn:f.start.dn,mat:f.start.mat,end:'PONTA',el:null};
   const el=byId(f.id); if(!el) throw new Error('Origem inexistente');
+  if(f.port==='In') return {p:el.pIn.p.clone(),d:el.pIn.d.clone().negate(),dn:el.dn,mat:el.mat,end:el.eIn,el,port:'In'};
   const port=f.port==='Br'?el.pBr:el.pOut; if(!port) throw new Error('A origem não tem essa saída');
   return {p:port.p.clone(),d:port.d.clone(),dn:port.dn,mat:el.mat,end:port.end,el,port:f.port};
 }
 
 function construir(cmd,src){
-  const t=cmd.tipo, dn=src.dn, d=src.d, p0=src.p, corMat=COR_MAT[src.mat]||0x2f6fa8;
+  const t=cmd.tipo, dn=cmd.dn||src.dn, d=src.d, p0=src.p, corMat=COR_MAT[src.mat]||0x2f6fa8;
   const e={id:cmd.id,tipo:t,cmd,mat:src.mat,dn,dn2:null,eIn:'PONTA',eOut:'PONTA',eBr:null,
     from:cmd.fonte.start?null:{id:cmd.fonte.id,port:cmd.fonte.port},
     pIn:{p:p0.clone(),d:d.clone(),dn,end:'PONTA'},pOut:null,pBr:null,lenM:0,ang:null};
@@ -259,7 +246,7 @@ function construir(cmd,src){
     e.pOut={p:p0.clone().addScaledVector(d,L),d:d.clone(),dn,end:'PONTA'};
   } else if(t==='CURVA'||t==='JOELHO'){
     const th=cmd.ang*Math.PI/180, R=(t==='CURVA'?Cat.raioCurva(dn):Cat.raioJoelho(dn))*K;
-    const tt=alvo(d,cmd.dir);
+    const tt=cmd.dirVec?V(cmd.dirVec).normalize():alvo(d,cmd.dir);
     e.ang=cmd.ang; e.eIn=cmd.eIn; e.eOut=cmd.eOut;
     const arc=new Arco(p0,d,tt,R,th);
     g.add(new THREE.Mesh(new THREE.TubeGeometry(arc,Math.max(8,Math.round(cmd.ang/3)),r,32,false),mat(corMat)));
@@ -325,105 +312,24 @@ function compat(a,b){
   return null;
 }
 
-function status(msg,kind){const s=$('status');s.textContent=msg;s.className=kind||''}
 
-function adicionar(cmd,silencioso){
-  let src; try{src=resolve(cmd)}catch(err){status(err.message,'warn');return null}
+
+function adicionar(cmd){
+  let src; try{src=resolve(cmd)}catch(err){msg(err.message,'warn');return null}
   if(cmd.id==null) cmd.id=nextId;
   nextId=Math.max(nextId,cmd.id)+1;
   const e=construir(cmd,src);
+  e.grupo.userData.id=e.id;
   rede.push(e); raiz.add(e.grupo);
-  if(!silencioso){
-    if(src.el&&!compat(src.end,e.eIn)) status(`Ligação incompatível: ${END_NOME[src.end]} → ${END_NOME[e.eIn]} (${nomeEl(e)}).`,'warn');
-    else status(`${nomeEl(e)} adicionado${e.dn2?` (DN${e.dn} × DN${e.dn2})`:` (DN${e.dn})`}.`,'ok');
-    atualizaFontes(e.pOut?`${e.id}:Out`:(e.pBr?`${e.id}:Br`:'novo'));
-    enquadrar(rede.length===1?VISTAS.iso:camera.position.clone().sub(controls.target));
-  }
   return e;
 }
 function desfazer(){
   const e=rede.pop(); if(!e) return;
   raiz.remove(e.grupo); e.grupo.traverse(o=>{if(o.geometry)o.geometry.dispose()});
   nextId=e.id;
-  atualizaFontes(e.from?`${e.from.id}:${e.from.port}`:'novo'); status('Último elemento removido.');
 }
-function limpar(){while(rede.length)desfazer();nextId=1;atualizaFontes('novo')}
-
-/* ---------- UI: fonte e formularios ---------- */
+function limpar(){while(rede.length)desfazer();nextId=1}
 function usado(id,port){return rede.some(e=>e.from&&e.from.id===id&&e.from.port===port)}
-function atualizaFontes(sel){
-  const s=$('fonte'); s.innerHTML='<option value="novo">Novo ponto inicial</option>';
-  for(const e of rede){
-    if(e.pOut&&!usado(e.id,'Out')) s.add(new Option(`#${e.id} ${nomeEl(e)} — saída (DN${e.pOut.dn})`,`${e.id}:Out`));
-    if(e.pBr&&!usado(e.id,'Br')) s.add(new Option(`#${e.id} ${nomeEl(e)} — derivação (DN${e.pBr.dn})`,`${e.id}:Br`));
-  }
-  s.value=[...s.options].some(o=>o.value===sel)?sel:'novo';
-  $('novo').classList.toggle('hide',s.value!=='novo');
-  if(typeof atualizaTipo==='function') atualizaTipo();
-}
-function montaFonte(){
-  const v=$('fonte').value;
-  if(v==='novo') return {start:{p:[+$('x0').value,+$('y0').value,+$('z0').value],d:$('d0').value.split(',').map(Number),dn:+$('dn').value,mat:$('mat').value}};
-  const [id,port]=v.split(':'); return {id:+id,port};
-}
-function dnAtual(){const v=$('fonte').value;if(v==='novo')return +$('dn').value;const [id,port]=v.split(':');const e=byId(+id);return (port==='Br'?e.pBr:e.pOut).dn}
-
-for(const dn of DNs){$('dn').add(new Option('DN'+dn,dn));$('dn2').add(new Option('DN'+dn,dn))}
-$('dn').value=100; $('dn2').value=50;
-for(const [k,p] of Object.entries(PECAS)) $('tipo').add(new Option(p.nome,k));
-function preencheEnds(sel,opts,def){sel.innerHTML='';for(const o of opts)sel.add(new Option(END_NOME[o],o));sel.value=def&&opts.includes(def)?def:opts[0];sel.disabled=opts.length===1}
-function atualizaTipo(){
-  const k=$('tipo').value, t=PECAS[k], dn=dnAtual();
-  const show=(id,on)=>$(id).classList.toggle('hide',!on);
-  show('fAng',!!t.ang); show('fDir',!!t.dir); show('fAngDir',!!(t.ang||t.dir));
-  show('fDn2',!!t.dn2); show('fLen',!!t.len);
-  $('lDir').textContent=k==='TE'?'Direção da derivação':'Direção';
-  $('lDn2').textContent=k==='TE'?'DN da derivação':'DN de saída';
-  show('fIn',!!t.in); show('fOut',!!t.out); show('fBr',!!t.br);
-  const def=t.def||[];
-  if(t.in) preencheEnds($('eIn'),t.in,def[0]);
-  if(t.out) preencheEnds($('eOut'),t.out,def[1]);
-  if(t.br) preencheEnds($('eBr'),t.br,def[2]);
-  if(t.len) $('len').value=Math.round(t.L(dn));
-  if(t.dn2&&+$('dn2').value===dn&&k!=='TE'){const i=ix(dn);$('dn2').value=DNs[i>0?i-1:1]}
-}
-$('tipo').onchange=atualizaTipo; $('dn').onchange=atualizaTipo;
-$('fonte').onchange=()=>{$('novo').classList.toggle('hide',$('fonte').value!=='novo');atualizaTipo()};
-$('eIn').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync&&t.out)$('eOut').value=$('eIn').value};
-$('eOut').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync)$('eIn').value=$('eOut').value};
-
-$('addTubo').onclick=()=>{
-  const L=+$('ltubo').value; if(!(L>0)){status('Informe um comprimento válido.','warn');return}
-  adicionar({tipo:'TUBO',fonte:montaFonte(),len:L});
-};
-$('addPeca').onclick=()=>{
-  const k=$('tipo').value,t=PECAS[k];
-  if(t.dn2&&k!=='TE'&&+$('dn2').value===dnAtual()){status('O DN de saída deve ser diferente do DN de entrada.','warn');return}
-  const cmd={tipo:k,fonte:montaFonte()};
-  if(t.ang) cmd.ang=+$('ang').value;
-  if(t.dir) cmd.dir=$('dir').value;
-  if(t.dn2) cmd.dn2=+$('dn2').value;
-  if(t.len) cmd.len=+$('len').value;
-  if(t.in) cmd.eIn=$('eIn').value;
-  if(t.out) cmd.eOut=$('eOut').value;
-  if(t.br) cmd.eBr=$('eBr').value;
-  adicionar(cmd);
-};
-$('undo').onclick=desfazer;
-$('clear').onclick=()=>{if(!rede.length||confirm('Apagar toda a rede?'))limpar()};
-
-/* ---------- Vistas ---------- */
-const VISTAS={iso:new THREE.Vector3(-1,-1,.8),planta:new THREE.Vector3(0,-.0005,1),frente:new THREE.Vector3(0,-1,0)};
-let ultimaVista=VISTAS.iso;
-function enquadrar(dir){
-  const box=new THREE.Box3().setFromObject(raiz);
-  let c=new THREE.Vector3(0,0,0),rad=3;
-  if(!box.isEmpty()){c=box.getCenter(new THREE.Vector3());rad=Math.max(box.getBoundingSphere(new THREE.Sphere()).radius,0.5)}
-  const dist=rad/Math.sin(THREE.MathUtils.degToRad(camera.fov/2))*1.05;
-  camera.position.copy(c).addScaledVector(dir.clone().normalize(),dist);
-  controls.target.copy(c); camera.near=Math.max(dist/1000,0.01); camera.far=dist*50; camera.updateProjectionMatrix(); controls.update();
-}
-document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const k=b.dataset.v;if(k!=='fit')ultimaVista=VISTAS[k];enquadrar(k==='fit'?ultimaVista:VISTAS[k])});
 
 /* ---------- Quantitativo ---------- */
 function quantitativo(){
@@ -439,7 +345,7 @@ function quantitativo(){
       get(pecas,`${e.tipo}|${dn}|${e.ang}|${ends}`,()=>({nome,dn,ends,q:0})).q++;
     }
     if(e.from){
-      const o=byId(e.from.id), port=e.from.port==='Br'?o.pBr:o.pOut, kind=compat(port.end,e.eIn);
+      const o=byId(e.from.id), port=e.from.port==='Br'?o.pBr:e.from.port==='In'?{end:o.eIn}:o.pOut, kind=compat(port.end,e.eIn);
       if(!kind) verif.push(`Ligação incompatível: ${END_NOME[port.end]} → ${END_NOME[e.eIn]} entre #${o.id} ${nomeEl(o)} e #${e.id} ${nomeEl(e)}.`);
       else get(kind==='FLANGE'?fl:kind==='ELASTICA'?el:jm,`${e.dn}`,()=>({dn:e.dn,q:0})).q++;
     }
@@ -447,7 +353,7 @@ function quantitativo(){
   for(const e of rede){
     if(e.pOut&&e.pOut.end==='FLANGE'&&!usado(e.id,'Out')) verif.push(`Flange sem par: saída de #${e.id} ${nomeEl(e)} (DN${e.pOut.dn}).`);
     if(e.pBr&&e.pBr.end==='FLANGE'&&!usado(e.id,'Br')) verif.push(`Flange sem par: derivação de #${e.id} ${nomeEl(e)} (DN${e.pBr.dn}).`);
-    if(!e.from&&e.eIn==='FLANGE') verif.push(`Flange sem par: entrada de #${e.id} ${nomeEl(e)} (DN${e.dn}).`);
+    if(!e.from&&e.eIn==='FLANGE'&&!usado(e.id,'In')) verif.push(`Flange sem par: entrada de #${e.id} ${nomeEl(e)} (DN${e.dn}).`);
   }
   const lin=[];
   for(const x of Object.values(tubos).sort((a,b)=>a.dn-b.dn)) lin.push(['Tubos',`Tubo ${x.mat} DN${x.dn}`,'m',x.m.toFixed(2).replace('.',',')]);
@@ -470,8 +376,8 @@ function quantitativo(){
   return {lin,verif};
 }
 let ultimoCsv='';
-$('quant').onclick=()=>{
-  if(!rede.length){status('A rede está vazia.','warn');return}
+function mostraQuant(){
+  if(!rede.length){msg('A rede está vazia.','warn');return}
   const {lin,verif}=quantitativo();
   let h='<h2 style="margin:0 0 4px;font-size:17px">Quantitativo</h2>';
   for(const c of [...new Set(lin.map(l=>l[0]))]){
@@ -484,50 +390,10 @@ $('quant').onclick=()=>{
   ultimoCsv='﻿Categoria;Descrição;Unidade;Quantidade\r\n'+lin.map(l=>l.join(';')).join('\r\n')
     +(verif.length?'\r\n'+verif.map(v=>'Verificar;'+v+';;').join('\r\n'):'');
   $('dlg').showModal();
-};
-$('fechar').onclick=()=>$('dlg').close();
-$('csv').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ultimoCsv],{type:'text/csv;charset=utf-8'}));a.download='Quantitativo_RedesAgua.csv';a.click()};
+}
 
-/* ---------- Salvar / abrir ---------- */
-$('save').onclick=()=>{
-  const dados=JSON.stringify({app:'RedesAgua-Web',versao:1,cmds:rede.map(e=>e.cmd)});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dados],{type:'application/json'}));a.download='rede-agua.json';a.click();
-};
-$('load').onclick=()=>$('file').click();
-$('file').onchange=async ev=>{
-  const f=ev.target.files[0]; if(!f) return;
-  try{
-    const j=JSON.parse(await f.text()); if(j.app!=='RedesAgua-Web') throw new Error('arquivo inválido');
-    limpar(); for(const c of j.cmds) if(!adicionar(c,true)) throw new Error('falha ao reconstruir a rede');
-    const u=rede[rede.length-1];
-    atualizaFontes(u&&u.pOut?`${u.id}:Out`:'novo'); enquadrar(VISTAS.iso); status('Projeto aberto.','ok');
-  }catch(err){status('Não foi possível abrir: '+err.message,'warn')}
-  ev.target.value='';
-};
-
-/* ---------- Impressao por janela ---------- */
-const PAPEL={A4:[297,210],A3:[420,297]}; // paisagem (mm)
-$('print').onclick=()=>{
-  if(!rede.length){status('A rede está vazia.','warn');return}
-  const ov=document.createElement('div'); ov.id='sel';
-  ov.innerHTML='<div id="selhint">Arraste a janela a imprimir (Esc cancela)</div><div id="selrect" class="hide"></div>';
-  $('main').appendChild(ov);
-  const rect=ov.querySelector('#selrect'); let a=null;
-  const esc=e=>{if(e.key==='Escape')fim()};
-  const fim=()=>{ov.remove();removeEventListener('keydown',esc)};
-  addEventListener('keydown',esc);
-  const pos=e=>{const b=ov.getBoundingClientRect();return [Math.min(Math.max(e.clientX-b.left,0),b.width),Math.min(Math.max(e.clientY-b.top,0),b.height)]};
-  ov.onpointerdown=e=>{a=pos(e);ov.setPointerCapture(e.pointerId);rect.classList.remove('hide')};
-  ov.onpointermove=e=>{if(!a)return;const b=pos(e);
-    Object.assign(rect.style,{left:Math.min(a[0],b[0])+'px',top:Math.min(a[1],b[1])+'px',width:Math.abs(a[0]-b[0])+'px',height:Math.abs(a[1]-b[1])+'px'})};
-  ov.onpointerup=e=>{
-    if(!a)return; const b=pos(e); const x=Math.min(a[0],b[0]),y=Math.min(a[1],b[1]),w=Math.abs(a[0]-b[0]),h=Math.abs(a[1]-b[1]);
-    fim(); if(w<8||h<8){status('Janela muito pequena; impressão cancelada.','warn');return}
-    imprimir(x,y,w,h);
-  };
-};
-function imprimir(x,y,w,h){
-  const paisagem=w>=h, papel=$('papel').value, [pl,ps]=PAPEL[papel];
+function imprimir(x,y,w,h,pap){
+  const paisagem=w>=h, papel=pap, [pl,ps]=PAPEL[papel];
   const pw=paisagem?pl:ps, ph=paisagem?ps:pl; // folha em mm na orientacao escolhida
   const M=10, legenda=8, areaW=pw-2*M, areaH=ph-2*M-legenda;
   // pixels de saida (200 dpi) com a mesma proporcao da janela, ajustados a area util da folha
@@ -553,12 +419,445 @@ function imprimir(x,y,w,h){
   <div class="cap"><span>RedesAgua — rede de água</span><span>${papel} ${paisagem?'paisagem':'retrato'} — ${hoje}</span></div></body></html>`;
   f.onload=()=>{const im=f.contentDocument.getElementById('i');const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)};im.complete?go():im.onload=go};
   document.body.appendChild(f);
-  status(`Imprimindo janela em ${papel} ${paisagem?'paisagem':'retrato'}, ajustada à folha.`,'ok');
+  msg(`Imprimindo janela em ${papel} ${paisagem?'paisagem':'retrato'}, ajustada à folha.`,'ok');
 }
 
+
+/* ---------- Linha de comando (estilo CAD) ---------- */
+const hist=$('hist'), inp=$('inp'), promptEl=$('prompt'), chips=$('chips'), coord=$('coord');
+function msg(t,cls){const d=document.createElement('div');d.textContent=t;if(cls)d.className=cls;hist.appendChild(d);hist.scrollTop=hist.scrollHeight}
+const norm=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const fmt=n=>(+n.toFixed(3)).toString().replace('.',',');
+const estado={orto:true,snap:true};
+let pend=null, ultimoCmd=null, ocupado=false;
+
+// Pede algo ao usuario. Resolve com {t:'pt'|'num'|'kw'|'el'|'none'|'cancel', v, sx, sy}
+// o = {msg, tipo:'ponto'|'num'|'kw'|'el'|'tela', kw:[], def, base:Vector3, rect:bool, sx0, sy0}
+function pedir(o){
+  return new Promise(res=>{
+    pend={o,res};
+    promptEl.textContent=o.msg; chips.innerHTML='';
+    for(const k of (o.kw||[])){const b=document.createElement('button');b.textContent=k;b.onclick=ev=>{ev.preventDefault();resolveTexto(k);inp.focus()};chips.appendChild(b)}
+    inp.value=''; inp.focus();
+  });
+}
+function fecha(r){
+  const p=pend; if(!p) return; pend=null; limpaGuias();
+  promptEl.textContent=ocupado?'…':'Comando:'; chips.innerHTML='';
+  p.res(r);
+}
+function interpreta(txt,o){
+  const t=txt.trim(), n=norm(t);
+  if(!t){
+    if(o.def==null) return {t:'none'};
+    return o.tipo==='num'?{t:'num',v:Number(o.def)}:{t:'kw',v:o.def};
+  }
+  const kws=o.kw||[];
+  let k=kws.find(x=>norm(x)===n); if(!k){const m=kws.filter(x=>norm(x).startsWith(n));if(m.length===1)k=m[0]}
+  if(k) return {t:'kw',v:k};
+  if(/^[-+]?\d+([.,]\d+)?$/.test(t)) return {t:'num',v:parseFloat(t.replace(',','.'))};
+  if(o.tipo==='ponto'){
+    const partes=t.includes(';')?t.split(';'):((t.match(/,/g)||[]).length===2?t.split(','):null);
+    if(partes){const v=partes.map(x=>parseFloat(x.replace(',','.')));if(v.length>=2&&v.every(x=>!isNaN(x)))return {t:'pt',v:new THREE.Vector3(v[0],v[1],v[2]||0)}}
+  }
+  return {t:'inv',v:t};
+}
+function resolveTexto(txt){
+  if(!pend) return;
+  const r=interpreta(txt,pend.o);
+  if(r.t==='inv'){msg('Entrada inválida: '+r.v,'warn');return}
+  if(pend.o.tipo==='kw'&&r.t==='num'&&!(pend.o.kw||[]).includes(String(r.v))){msg('Opção inválida.','warn');return}
+  if((pend.o.tipo==='el'||pend.o.tipo==='tela')&&r.t!=='kw'&&r.t!=='none'){msg('Clique na tela.','warn');return}
+  msg((pend.o.msg||'')+' '+(txt||'↵'),'eco');
+  fecha(r);
+}
+inp.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault(); const t=inp.value; inp.value='';
+    if(pend) resolveTexto(t); else if(!ocupado) executarTexto(t);
+  } else if(e.key==='Escape') cancela();
+  else if(e.key==='z'&&e.ctrlKey&&pend&&(pend.o.kw||[]).includes('Desfazer')){e.preventDefault();resolveTexto('Desfazer')}
+});
+addEventListener('keydown',e=>{
+  if(e.target===inp||e.target.closest('dialog')) return;
+  if(e.key==='Escape') cancela();
+  else if(e.key==='F8'){e.preventDefault();alterna('orto')}
+  else if(e.key==='F3'){e.preventDefault();alterna('snap')}
+  else if(e.ctrlKey&&e.key==='z'&&pend&&(pend.o.kw||[]).includes('Desfazer')){e.preventDefault();resolveTexto('Desfazer')}
+  else if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){inp.focus()}
+});
+function cancela(){ if(pend){msg('*Cancelado*','eco');fecha({t:'cancel'})} }
+function alterna(k){estado[k]=!estado[k];$(k).classList.toggle('on',estado[k]);msg(k==='orto'?'Orto '+(estado.orto?'ligado':'desligado'):'Snap '+(estado.snap?'ligado':'desligado'),'eco')}
+$('orto').onclick=()=>alterna('orto'); $('snap').onclick=()=>alterna('snap');
+$('orto').classList.add('on'); $('snap').classList.add('on');
+
+/* ---------- Mouse na area de desenho: ponto 3D, orto, snap ---------- */
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2();
+const canvas=renderer.domElement;
+const guia=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]),new THREE.LineBasicMaterial({color:0xff8a00,depthTest:false}));
+guia.renderOrder=10; guia.visible=false; scene.add(guia);
+const marca=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial({color:0xffd400,depthTest:false}));
+marca.renderOrder=11; marca.visible=false; scene.add(marca);
+let hoverDir=null, hoverPonto=null;
+function limpaGuias(){guia.visible=false;marca.visible=false;$('selrect').classList.add('hide');$('tip').classList.add('hide');hoverDir=null;hoverPonto=null}
+function mouseRay(ev){const b=canvas.getBoundingClientRect();ptr.set(((ev.clientX-b.left)/b.width)*2-1,-((ev.clientY-b.top)/b.height)*2+1);ray.setFromCamera(ptr,camera)}
+function portasAbertas(){
+  const L=[];
+  for(const e of rede){L.push(e.pIn.p);if(e.pOut)L.push(e.pOut.p);if(e.pBr)L.push(e.pBr.p)}
+  return L;
+}
+function snapPorta(ev){
+  const b=canvas.getBoundingClientRect(); let best=null,bd=14;
+  for(const p of portasAbertas()){
+    const q=p.clone().project(camera); const x=(q.x+1)/2*b.width+b.left,y=(1-q.y)/2*b.height+b.top;
+    const d=Math.hypot(x-ev.clientX,y-ev.clientY); if(d<bd&&q.z<1){bd=d;best=p}
+  }
+  return best;
+}
+// ponto no plano de trabalho (horizontal, ou vertical se a vista for lateral) com orto e snap
+function pontoMouse(ev,base){
+  const b=base||new THREE.Vector3(0,0,0);
+  const sp=estado.snap?snapPorta(ev):null;
+  if(sp) return {p:sp.clone(),snap:true};
+  mouseRay(ev);
+  const v=new THREE.Vector3(); camera.getWorldDirection(v);
+  let n,axes;
+  if(Math.abs(v.z)>0.35){n=new THREE.Vector3(0,0,1);axes=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,1,0)]}
+  else if(Math.abs(v.x)>Math.abs(v.y)){n=new THREE.Vector3(1,0,0);axes=[new THREE.Vector3(0,1,0),new THREE.Vector3(0,0,1)]}
+  else{n=new THREE.Vector3(0,1,0);axes=[new THREE.Vector3(1,0,0),new THREE.Vector3(0,0,1)]}
+  const pl=new THREE.Plane().setFromNormalAndCoplanarPoint(n,b);
+  const hit=ray.ray.intersectPlane(pl,new THREE.Vector3()); if(!hit) return null;
+  if(base&&estado.orto){
+    const d=hit.clone().sub(b); const da=d.dot(axes[0]),db=d.dot(axes[1]);
+    const ax=Math.abs(da)>=Math.abs(db)?axes[0]:axes[1];
+    hit.copy(b).addScaledVector(ax,d.dot(ax));
+  }
+  return {p:hit,snap:false};
+}
+function dirDireta(){ // direcao usada ao digitar so uma distancia
+  if(hoverDir) return hoverDir.clone();
+  if(trAtual&&trAtual.atual.d) return trAtual.atual.d.clone();
+  return new THREE.Vector3(1,0,0);
+}
+canvas.addEventListener('pointermove',ev=>{
+  const b=canvas.getBoundingClientRect();
+  if(pend&&pend.o.tipo==='tela'){
+    if(pend.o.sx0!=null){
+      const x0=pend.o.sx0,y0=pend.o.sy0,x1=ev.clientX-b.left,y1=ev.clientY-b.top,r=$('selrect');
+      r.classList.remove('hide');Object.assign(r.style,{left:Math.min(x0,x1)+'px',top:Math.min(y0,y1)+'px',width:Math.abs(x1-x0)+'px',height:Math.abs(y1-y0)+'px'});
+    }
+    return;
+  }
+  if(!pend||pend.o.tipo!=='ponto'&&!(pend.o.tipo==='num'&&pend.o.base)) {coord.textContent='';return}
+  const base=pend.o.base||null, r=pontoMouse(ev,base); if(!r) return;
+  hoverPonto=r.p;
+  coord.textContent=`X ${fmt(r.p.x)}  Y ${fmt(r.p.y)}  Z ${fmt(r.p.z)}`;
+  if(base){
+    const d=r.p.clone().sub(base), len=d.length();
+    hoverDir=len>1e-6?d.clone().normalize():null;
+    const pos=guia.geometry.attributes.position; pos.setXYZ(0,base.x,base.y,base.z);pos.setXYZ(1,r.p.x,r.p.y,r.p.z);pos.needsUpdate=true;
+    guia.geometry.computeBoundingSphere(); guia.visible=true;
+    const t=$('tip'); t.textContent=fmt(len)+' m'; t.classList.remove('hide');
+    t.style.left=(ev.clientX-b.left+14)+'px'; t.style.top=(ev.clientY-b.top+14)+'px';
+  }
+  marca.visible=r.snap; if(r.snap){marca.position.copy(r.p);const s=Math.max(camera.position.distanceTo(r.p)*0.012,0.02);marca.scale.setScalar(s)}
+});
+let down=null;
+canvas.addEventListener('pointerdown',ev=>{down={x:ev.clientX,y:ev.clientY,b:ev.button}});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerup',ev=>{
+  if(!down) return; const moved=Math.hypot(ev.clientX-down.x,ev.clientY-down.y)>4, bt=down.b; down=null;
+  if(moved||!pend) return;
+  const o=pend.o, b=canvas.getBoundingClientRect(), sx=ev.clientX-b.left, sy=ev.clientY-b.top;
+  if(bt===2){msg((o.msg||'')+' ↵','eco');resolveTexto('');return} // botao direito = Enter
+  if(bt!==0) return;
+  if(o.tipo==='tela'){msg((o.msg||'')+' (clique)','eco');fecha({t:'pt',sx,sy});return}
+  if(o.tipo==='el'){
+    mouseRay(ev); const hits=ray.intersectObjects(raiz.children,true);
+    for(const h of hits){let g=h.object;while(g&&g.userData.id==null)g=g.parent;if(g){msg((o.msg||'')+' #'+g.userData.id,'eco');fecha({t:'el',v:g.userData.id});return}}
+    msg('Nada selecionado nesse ponto.','warn');return;
+  }
+  if(o.tipo==='ponto'||(o.tipo==='num'&&o.base)){
+    const r=pontoMouse(ev,o.base||null); if(!r) return;
+    msg((o.msg||'')+` ${fmt(r.p.x)},${fmt(r.p.y)},${fmt(r.p.z)}`,'eco');
+    if(o.tipo==='num') fecha({t:'num',v:r.p.distanceTo(o.base)}); else fecha({t:'pt',v:r.p});
+  }
+});
+controls.mouseButtons={LEFT:-1,MIDDLE:THREE.MOUSE.PAN,RIGHT:THREE.MOUSE.ROTATE};
+controls.zoomToCursor=true;
+
+/* ---------- Trecho (rede em andamento) ---------- */
+let trAtual=null;
+const ANGS=[90,45,22.5,11.25];
+const angPadrao=g=>ANGS.reduce((a,b)=>Math.abs(b-g)<Math.abs(a-g)?b:a);
+function novoTrecho(p,dn,matl){return {mat:matl,atual:{p:p.clone(),d:null,dn,end:'PONTA'},fonte:{start:{p:[p.x,p.y,p.z],d:[1,0,0],dn,mat:matl}},hist:[],n:0}}
+function addEl(cmd){
+  const t=trAtual;
+  if(t.atual.d&&t.fonte.start) t.fonte.start.d=[t.atual.d.x,t.atual.d.y,t.atual.d.z];
+  cmd.fonte=JSON.parse(JSON.stringify(t.fonte));
+  const antes={atual:{...t.atual,p:t.atual.p.clone(),d:t.atual.d&&t.atual.d.clone()},fonte:t.fonte};
+  const e=adicionar(cmd); if(!e) return null;
+  const temAnt=t.n>0||!t.fonte.start;
+  if(temAnt&&antes.atual.dn!==e.dn) msg(`Atenção: DN da peça (${e.dn}) difere do DN da linha (${antes.atual.dn}).`,'warn');
+  if(temAnt&&!compat(antes.atual.end,e.eIn))
+    msg(`Atenção: ligação ${END_NOME[antes.atual.end]} → ${END_NOME[e.eIn]} não é compatível (ponta entra em bolsa; flange com flange).`,'warn');
+  t.hist.push({antes,id:e.id}); t.n++;
+  if(e.pOut){t.atual={p:e.pOut.p.clone(),d:e.pOut.d.clone(),dn:e.pOut.dn,end:e.pOut.end};t.fonte={id:e.id,port:'Out'}}
+  else{msg(`${nomeEl(e)} fecha a rede.`,'ok');t.fechada=true}
+  return e;
+}
+function desfazTrecho(){
+  const t=trAtual; const h=t.hist.pop();
+  if(!h){msg('Nada para desfazer.','warn');return}
+  desfazer(); t.atual=h.antes.atual; t.fonte=h.antes.fonte; t.n--; t.fechada=false;
+}
+async function pedirAngulo(def){
+  const r=await pedir({tipo:'num',msg:`Ângulo da curva [90 / 45 / 22.5 / 11.25] <${def}>:`,kw:ANGS.map(String),def});
+  if(r.t==='cancel') return null;
+  const v=r.t==='kw'?Number(r.v):r.v, p=angPadrao(v);
+  if(Math.abs(p-v)>0.01) msg(`Ângulo ${v} não é padrão; usando ${p}°.`,'warn');
+  return p;
+}
+function extCurva(t){return t.mat==='PEAD'?'PONTA':'BOLSA'}
+function curvaETubo(t,ang,alvoV,comp){
+  const d=t.atual.d, key=dirChave(d,alvoV);
+  const c=addEl({tipo:'CURVA',ang,dir:key,eIn:extCurva(t),eOut:extCurva(t)}); if(!c) return;
+  addEl({tipo:'TUBO',len:comp});
+}
+// converte um vetor alvo em chave de direcao (Cima/Baixo/Esquerda/Direita) mais proxima
+function dirChave(d,alvoV){
+  let melhor='Direita',bd=-2;
+  for(const k of ['Cima','Baixo','Esquerda','Direita']){const a=alvo(d,k),dp=a.dot(alvoV.clone().normalize());if(dp>bd){bd=dp;melhor=k}}
+  return melhor;
+}
+// ponto livre apos a curva: o alvo nao precisa ser uma das 4 direcoes -> guarda o vetor
+function curvaETuboVetor(t,ang,alvoV,comp){
+  const d=t.atual.d, a=alvoV.clone().sub(d.clone().multiplyScalar(alvoV.dot(d)));
+  if(a.length()<1e-6){msg('Direção inválida.','warn');return}
+  const c=addEl({tipo:'CURVA',ang,dirVec:[a.x,a.y,a.z],eIn:extCurva(t),eOut:extCurva(t)}); if(!c) return;
+  addEl({tipo:'TUBO',len:comp});
+}
+
+async function comandoPonto(t,pedido){
+  const v=pedido.clone().sub(t.atual.p), comp=v.length();
+  if(comp<1e-6){msg('Ponto coincidente com o anterior.','warn');return}
+  if(!t.atual.d){t.atual.d=v.clone().normalize();addEl({tipo:'TUBO',len:comp});return}
+  const ang=THREE.MathUtils.radToDeg(t.atual.d.angleTo(v.clone().normalize()));
+  if(ang<1){addEl({tipo:'TUBO',len:comp});return}
+  if(ang>120){msg('Deflexão acima de 90 graus não é permitida.','warn');return}
+  const a=await pedirAngulo(angPadrao(ang)); if(a==null) return;
+  curvaETuboVetor(t,a,v.clone().normalize(),comp);
+}
+async function comandoReta(t){
+  if(!t.atual.d){msg('Sem direção definida: clique um ponto para o primeiro trecho.','warn');return}
+  const r=await pedir({tipo:'num',msg:'Comprimento do tubo na direção atual (m):',base:t.atual.p});
+  if(r.t!=='num'||!(r.v>0)) return;
+  addEl({tipo:'TUBO',len:r.v});
+}
+async function comandoCurva(t){
+  if(!t.atual.d){msg('Desenhe primeiro um trecho reto antes da curva.','warn');return}
+  const ang=await pedirAngulo(90); if(ang==null) return;
+  const rk=await pedir({tipo:'kw',msg:'Direção da curva [Cima/Baixo/Esquerda/Direita/Ponto] <Direita>:',kw:['Cima','Baixo','Esquerda','Direita','Ponto'],def:'Direita'});
+  if(rk.t==='cancel') return;
+  if(rk.v==='Ponto'){
+    const rp=await pedir({tipo:'ponto',msg:`Direção após a curva de ${ang}° (clique) ou distância:`,base:t.atual.p});
+    let v,comp;
+    if(rp.t==='pt'){v=rp.v.clone().sub(t.atual.p);comp=v.length()}
+    else if(rp.t==='num'){v=dirDireta();comp=rp.v}
+    else return;
+    if(comp<1e-6) return;
+    curvaETuboVetor(t,ang,v.clone().normalize(),comp);return;
+  }
+  const rc=await pedir({tipo:'num',msg:'Comprimento do tubo após a curva (m):',base:t.atual.p});
+  if(rc.t!=='num'||!(rc.v>0)) return;
+  addEl({tipo:'CURVA',ang,dir:rk.v,eIn:extCurva(t),eOut:extCurva(t)});
+  addEl({tipo:'TUBO',len:rc.v});
+}
+async function comandoPeca(t){
+  const esc=await pedirPeca(t.atual.dn,t.mat); if(!esc) return;
+  if(!t.atual.d){
+    const rd=await pedir({tipo:'ponto',msg:'Direção da peça (clique um ponto):',base:t.atual.p});
+    if(rd.t!=='pt') return;
+    const v=rd.v.clone().sub(t.atual.p); if(v.length()<1e-6) return;
+    t.atual.d=v.normalize();
+  }
+  const e=addEl(esc); if(!e) return;
+  if(e.pBr) msg('Para continuar pela derivação use o comando CONTINUAR.','eco');
+}
+
+async function loopRede(t){
+  trAtual=t;
+  try{
+    while(true){
+      if(t.fechada){msg('Rede fechada.','eco');break}
+      const r=await pedir({tipo:'ponto',msg:'Próximo ponto ou distância [Reta/Curva/Peça/Desfazer/Fim] <Fim>:',kw:['Reta','Curva','Peça','Desfazer','Fim'],base:t.atual.p,def:'Fim'});
+      if(r.t==='cancel'||r.t==='none') break;
+      if(r.t==='kw'){
+        if(r.v==='Fim') break;
+        if(r.v==='Desfazer') desfazTrecho();
+        else if(r.v==='Reta') await comandoReta(t);
+        else if(r.v==='Curva') await comandoCurva(t);
+        else if(r.v==='Peça') await comandoPeca(t);
+        continue;
+      }
+      if(r.t==='pt') await comandoPonto(t,r.v);
+      else if(r.t==='num'){
+        if(!(r.v>0)) continue;
+        const d=dirDireta(); await comandoPonto(t,t.atual.p.clone().addScaledVector(d,r.v));
+      }
+    }
+  } finally {
+    msg(`Rede finalizada: ${t.n} elemento(s)${t.atual?`, DN${t.atual.dn}`:''}. Use QUANT para o quantitativo.`,'ok');
+    trAtual=null; enquadrarSuave();
+  }
+}
+
+/* ---------- Comandos ---------- */
+async function cmdRede(){
+  const rm=await pedir({tipo:'kw',msg:'Material da rede [DEFoFo/PVCO/PVC/PEAD] <DEFoFo>:',kw:['DEFoFo','PVCO','PVC','PEAD'],def:'DEFoFo'});
+  if(rm.t==='cancel') return;
+  const rd=await pedir({tipo:'num',msg:'DN do tubo (mm) <100>:',def:100});
+  if(rd.t==='cancel') return;
+  const dn=DNs[ix(rd.v)]; if(dn!==rd.v) msg(`DN ${rd.v} não é padrão; usando DN${dn}.`,'warn');
+  const rp=await pedir({tipo:'ponto',msg:'Ponto inicial (clique ou x,y,z):'});
+  if(rp.t!=='pt') return;
+  await loopRede(novoTrecho(rp.v,dn,rm.v));
+}
+async function cmdContinuar(){
+  const re=await pedir({tipo:'el',msg:'Selecione o tubo ou peça onde continuar a rede:'});
+  if(re.t!=='el') return;
+  const el=byId(re.v); const lados=['Entrada'];
+  if(el.pOut) lados.push('Saída'); if(el.pBr) lados.push('Derivação');
+  const rl=await pedir({tipo:'kw',msg:`Continuar de [${lados.join('/')}] <${el.pOut?'Saída':'Entrada'}>:`,kw:lados,def:el.pOut?'Saída':'Entrada'});
+  if(rl.t==='cancel') return;
+  let port,key;
+  if(rl.v==='Entrada'){port={p:el.pIn.p.clone(),d:el.pIn.d.clone().negate(),dn:el.dn,end:el.eIn};key='In'}
+  else if(rl.v==='Derivação'){port=el.pBr;key='Br'}
+  else{port=el.pOut;key='Out'}
+  if(usado(el.id,key)){msg('Essa extremidade já tem algo ligado; use DESFAZER ou apague antes.','warn');return}
+  const t=novoTrecho(port.p,port.dn,el.mat);
+  t.atual={p:port.p.clone(),d:port.d.clone(),dn:port.dn,end:port.end}; t.fonte={id:el.id,port:key};
+  msg(`Continuando a rede DN${port.dn} (${el.mat}) a partir da ${rl.v.toLowerCase()}.`,'eco');
+  await loopRede(t);
+}
+async function cmdImprimir(){
+  if(!rede.length){msg('A rede está vazia.','warn');return}
+  const a=await pedir({tipo:'tela',msg:'Primeiro canto da área a imprimir:'}); if(a.t!=='pt') return;
+  const b=await pedir({tipo:'tela',msg:'Canto oposto:',sx0:a.sx,sy0:a.sy}); if(b.t!=='pt') return;
+  const x=Math.min(a.sx,b.sx),y=Math.min(a.sy,b.sy),w=Math.abs(a.sx-b.sx),h=Math.abs(a.sy-b.sy);
+  if(w<8||h<8){msg('Janela muito pequena; impressão cancelada.','warn');return}
+  const rp=await pedir({tipo:'kw',msg:'Papel [A4/A3] <A3>:',kw:['A4','A3'],def:'A3'}); if(rp.t==='cancel') return;
+  imprimir(x,y,w,h,rp.v);
+}
+function cmdQuant(){if(!rede.length){msg('A rede está vazia.','warn');return}mostraQuant()}
+function cmdDesfazerGeral(){if(!rede.length){msg('Nada para desfazer.','warn');return}desfazer();enquadrarSuave()}
+function cmdLimpar(){if(!rede.length||confirm('Apagar toda a rede?')){limpar();msg('Rede apagada.','ok')}}
+
+const COMANDOS={
+  REDE:cmdRede, CONTINUAR:cmdContinuar, QUANT:cmdQuant, IMPRIMIR:cmdImprimir,
+  VISTA:()=>vista('iso'), PLANTA:()=>vista('planta'), FRENTE:()=>vista('frente'), ZOOM:()=>vista('fit'),
+  DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, SALVAR:salvar, ABRIR:()=>$('file').click()
+};
+async function executar(nome){
+  if(ocupado){msg('Termine ou cancele (Esc) o comando atual.','warn');return}
+  const fn=COMANDOS[nome]; if(!fn){msg('Comando desconhecido: '+nome,'warn');return}
+  ultimoCmd=nome; ocupado=true; msg('Comando: '+nome,'cmd');
+  try{await fn()}catch(err){msg('Erro: '+err.message,'warn');console.error(err)}
+  ocupado=false; promptEl.textContent='Comando:'; inp.focus();
+}
+function executarTexto(txt){
+  let t=norm(txt.trim()).replace(/^agua_/,''); if(!t&&ultimoCmd){executar(ultimoCmd);return}
+  if(!t) return;
+  const nomes=Object.keys(COMANDOS), n=nomes.find(x=>norm(x)===t)||(nomes.filter(x=>norm(x).startsWith(t)).length===1?nomes.find(x=>norm(x).startsWith(t)):null);
+  if(n) executar(n); else msg('Comando desconhecido: '+txt+'  (REDE, CONTINUAR, QUANT, IMPRIMIR, VISTA, PLANTA, FRENTE, ZOOM, DESFAZER, SALVAR, ABRIR)','warn');
+}
+document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{ if(ocupado&&pend&&b.dataset.cmd!=='REDE'&&!['VISTA','PLANTA','FRENTE','ZOOM'].includes(b.dataset.cmd)){msg('Termine ou cancele (Esc) o comando atual.','warn');return} executar(b.dataset.cmd)});
+
+/* ---------- Vistas ---------- */
+const VISTAS={iso:new THREE.Vector3(-1,-1,.8),planta:new THREE.Vector3(0,-.0005,1),frente:new THREE.Vector3(0,-1,0)};
+let ultimaVista=VISTAS.iso;
+function enquadrar(dir){
+  const box=new THREE.Box3().setFromObject(raiz);
+  let c=new THREE.Vector3(0,0,0),rad=3;
+  if(!box.isEmpty()){c=box.getCenter(new THREE.Vector3());rad=Math.max(box.getBoundingSphere(new THREE.Sphere()).radius,0.5)}
+  const dist=rad/Math.sin(THREE.MathUtils.degToRad(camera.fov/2))*1.05;
+  camera.position.copy(c).addScaledVector(dir.clone().normalize(),dist);
+  controls.target.copy(c); camera.near=Math.max(dist/1000,0.01); camera.far=dist*50; camera.updateProjectionMatrix(); controls.update();
+}
+function vista(k){if(k!=='fit')ultimaVista=VISTAS[k];enquadrar(k==='fit'?camera.position.clone().sub(controls.target):VISTAS[k])}
+function enquadrarSuave(){if(rede.length)enquadrar(camera.position.clone().sub(controls.target))}
+
+/* ---------- Dialogo de peca (como a janela P do plugin) ---------- */
+for(const dn of DNs){$('dn').add(new Option('DN'+dn,dn));$('dn2').add(new Option('DN'+dn,dn))}
+for(const [k,p] of Object.entries(PECAS)) $('tipo').add(new Option(p.nome,k));
+function preencheEnds(sel,opts,def){sel.innerHTML='';for(const o of opts)sel.add(new Option(END_NOME[o],o));sel.value=def&&opts.includes(def)?def:opts[0];sel.disabled=opts.length===1}
+function atualizaTipo(){
+  const k=$('tipo').value, t=PECAS[k], dn=+$('dn').value;
+  const show=(id,on)=>$(id).classList.toggle('hide',!on);
+  show('fAng',!!t.ang); show('fDir',!!t.dir); show('fDn2',!!t.dn2); show('fLen',!!t.len);
+  $('lDir').textContent=k==='TE'?'Direção da derivação':'Direção';
+  $('lDn2').textContent=k==='TE'?'DN da derivação':'DN de saída';
+  show('fIn',!!t.in); show('fOut',!!t.out); show('fBr',!!t.br);
+  const def=t.def||[];
+  if(t.in) preencheEnds($('eIn'),t.in,def[0]);
+  if(t.out) preencheEnds($('eOut'),t.out,def[1]);
+  if(t.br) preencheEnds($('eBr'),t.br,def[2]);
+  if(t.len) $('len').value=Math.round(t.L(dn));
+  if(t.dn2&&+$('dn2').value===dn&&k!=='TE'){const i=ix(dn);$('dn2').value=DNs[i>0?i-1:1]}
+}
+$('tipo').onchange=atualizaTipo; $('dn').onchange=atualizaTipo;
+$('eIn').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync&&t.out)$('eOut').value=$('eIn').value};
+$('eOut').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync)$('eIn').value=$('eOut').value};
+function pedirPeca(dn,matl){
+  return new Promise(res=>{
+    const dlg=$('dlgPeca'); $('dn').value=dn; $('dn2').value=DNs[Math.max(0,ix(dn)-1)]; atualizaTipo();
+    $('dlgMat').textContent='Material: '+matl;
+    let ok=false;
+    $('pecaOk').onclick=ev=>{
+      ev.preventDefault();
+      const k=$('tipo').value,t=PECAS[k],d=+$('dn').value;
+      if(t.dn2&&k!=='TE'&&+$('dn2').value===d){$('pecaErro').textContent='O DN de saída deve ser diferente do DN de entrada.';return}
+      const cmd={tipo:k,dn:d};
+      if(t.ang) cmd.ang=+$('ang').value;
+      if(t.dir) cmd.dir=$('dir').value;
+      if(t.dn2) cmd.dn2=+$('dn2').value;
+      if(t.len) cmd.len=+$('len').value;
+      if(t.in) cmd.eIn=$('eIn').value;
+      if(t.out) cmd.eOut=$('eOut').value;
+      if(t.br) cmd.eBr=$('eBr').value;
+      ok=cmd; dlg.close();
+    };
+    dlg.onclose=()=>res(ok||null);
+    $('pecaErro').textContent=''; dlg.showModal();
+  });
+}
+$('pecaCancel').onclick=()=>$('dlgPeca').close();
+
+/* ---------- Salvar / abrir ---------- */
+function salvar(){
+  const dados=JSON.stringify({app:'RedesAgua-Web',versao:2,cmds:rede.map(e=>e.cmd)});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dados],{type:'application/json'}));a.download='rede-agua.json';a.click();
+  msg('Projeto salvo (rede-agua.json).','ok');
+}
+$('file').onchange=async ev=>{
+  const f=ev.target.files[0]; if(!f) return;
+  try{
+    const j=JSON.parse(await f.text()); if(j.app!=='RedesAgua-Web') throw new Error('arquivo inválido');
+    limpar(); for(const c of j.cmds) if(!adicionar(c)) throw new Error('falha ao reconstruir a rede');
+    enquadrar(VISTAS.iso); msg('Projeto aberto.','ok');
+  }catch(err){msg('Não foi possível abrir: '+err.message,'warn')}
+  ev.target.value='';
+};
+$('fechar').onclick=()=>$('dlg').close();
+$('csv').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ultimoCsv],{type:'text/csv;charset=utf-8'}));a.download='Quantitativo_RedesAgua.csv';a.click()};
+
 /* ---------- Inicio ---------- */
-atualizaFontes('novo'); enquadrar(VISTAS.iso);
-window.__rede={rede,adicionar,quantitativo}; // depuracao
+enquadrar(VISTAS.iso);
+msg('RedesAgua Web — digite REDE (ou use a barra acima). Enter ou botão direito = Fim, Esc = cancelar, F8 = orto, F3 = snap.','eco');
+msg('Botão direito + arrastar = órbita, botão do meio = pan, roda = zoom. Digite uma distância (m) para seguir na direção do cursor.','eco');
+promptEl.textContent='Comando:'; inp.focus();
+window.__rede={rede,adicionar,quantitativo,executar,executarTexto};
+
 </script>
 </body>
 </html>

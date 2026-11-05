@@ -96,11 +96,20 @@ carregado na inicialização do ZWCAD (por exemplo `acaddoc.lsp` na pasta de sup
 
 ## Versão web (Chrome)
 
-Pasta `web/` — um único `index.html`, sem instalação, que roda em qualquer navegador moderno:
-redes em 3D (tubos, curvas, tês, registros, reduções, ventosas etc.), quantitativo com CSV, salvar/abrir
-projeto (JSON) e **impressão por janela** com retrato/paisagem automático e ajuste à folha (A4/A3).
-Usa o mesmo catálogo provisório do plugin. Publicada em
-https://eloycasaglande.github.io/water-network-plugin/web/ (GitHub Pages). O plugin do ZWCAD/AutoCAD continua como está.
+Pasta `web/` — um único `index.html`, sem instalação, que funciona **como no ZWCAD**: área de desenho 3D e
+**linha de comando** embaixo. Comandos: `REDE`, `CONTINUAR`, `QUANT`, `IMPRIMIR`, `VISTA`, `PLANTA`, `FRENTE`,
+`ZOOM`, `DESFAZER`, `SALVAR`, `ABRIR` (também na barra superior).
+
+- `REDE`: material, DN, ponto inicial (clique ou `x,y,z`) e depois o mesmo laço do plugin:
+  *Próximo ponto ou distância [Reta/Curva/Peça/Desfazer/Fim]*. Clique no desenho ou digite a distância (m) para seguir na direção do cursor.
+  Orto (F8) e snap nas extremidades (F3). Ctrl+Z = Desfazer; Enter ou botão direito = Fim; Esc cancela.
+- `Peça` abre a janela de peças (tê, registros, reduções, ventosa, JM etc.).
+- `CONTINUAR`: clique num tubo/peça e continue pela entrada, saída ou derivação.
+- `IMPRIMIR`: dois cantos da janela; retrato ou paisagem automático e ajuste à folha (A4/A3).
+- `QUANT`: quantitativo na tela e em CSV.
+
+Publicada em https://eloycasaglande.github.io/water-network-plugin/web/ (GitHub Pages).
+O plugin do ZWCAD/AutoCAD continua como está.
 
 ## Comandos
 
