@@ -118,7 +118,7 @@ h3{margin:10px 0 0;font-size:14px}
     <tr><td><b>REDE</b></td><td>Desenha uma rede nova: pede material, DN e ponto inicial, e depois pede o próximo ponto ou distância. Opções: <i>Reta</i> (segue em frente, pede só o comprimento), <i>Curva</i> (ângulo, direção e comprimento seguinte), <i>Peça</i> (abre a janela de peças), <i>Desfazer</i> (remove o último elemento) e <i>Fim</i>.</td></tr>
     <tr><td><b>CONTINUAR</b></td><td>Retoma uma rede existente: clique num tubo ou peça e escolha continuar pela <i>Entrada</i>, <i>Saída</i> ou <i>Derivação</i> (tê).</td></tr>
     <tr><td><b>QUANT</b></td><td>Mostra o quantitativo (tubos em metros, peças, parafusos, porcas, arruelas, juntas e avisos de ligação incompatível) e permite baixar em CSV.</td></tr>
-    <tr><td><b>IMPRIMIR</b></td><td>Clique dois cantos da área a imprimir e escolha A4 ou A3. A página escolhe retrato ou paisagem pela proporção da janela e ajusta à folha.</td></tr>
+    <tr><td><b>IMPRIMIR</b></td><td>Imprime o que está na tela, do jeito que está (mesma vista e zoom), sem a grade, pela janela de impressão do computador. Retrato ou paisagem é escolhido pela proporção da tela e a imagem é ajustada à folha. Enquadre a vista antes (Zoom ext., Iso, Planta...).</td></tr>
     <tr><td><b>DESFAZER</b> (ou <b>U</b>)</td><td>Remove o último elemento criado.</td></tr>
     <tr><td><b>LIMPAR</b></td><td>Apaga toda a rede (pede confirmação).</td></tr>
     <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td>Salva a rede neste navegador (fica guardada mesmo fechando a página) e abre de novo o que foi salvo. A rede também é guardada automaticamente a cada alteração e volta quando você reabre a página.</td></tr>
@@ -1115,14 +1115,9 @@ async function cmdContinuar(){
   msg(`Continuando a rede DN${port.dn} (${el.mat}) a partir da ${rl.v.toLowerCase()}.`,'eco');
   await loopRede(t);
 }
-async function cmdImprimir(){
+function cmdImprimir(){
   if(!rede.length){msg('A rede está vazia.','warn');return}
-  const a=await pedir({tipo:'tela',msg:'Primeiro canto da área a imprimir:'}); if(a.t!=='pt') return;
-  const b=await pedir({tipo:'tela',msg:'Canto oposto:',sx0:a.sx,sy0:a.sy}); if(b.t!=='pt') return;
-  const x=Math.min(a.sx,b.sx),y=Math.min(a.sy,b.sy),w=Math.abs(a.sx-b.sx),h=Math.abs(a.sy-b.sy);
-  if(w<8||h<8){msg('Janela muito pequena; impressão cancelada.','warn');return}
-  const rp=await pedir({tipo:'kw',msg:'Papel [A4/A3] <A3>:',kw:['A4','A3'],def:'A3'}); if(rp.t==='cancel') return;
-  imprimir(x,y,w,h,rp.v);
+  imprimir();
 }
 function cmdQuant(){if(!rede.length){msg('A rede está vazia.','warn');return}mostraQuant()}
 function cmdDesfazerGeral(){if(!rede.length){msg('Nada para desfazer.','warn');return}desfazer();enquadrarSuave()}
@@ -1163,34 +1158,28 @@ function vista(k){if(k!=='fit')ultimaVista=VISTAS[k];enquadrar(k==='fit'?camera.
 function enquadrarSuave(){if(rede.length)enquadrar(camera.position.clone().sub(controls.target))}
 
 
-function imprimir(x,y,w,h,pap){
-  const paisagem=w>=h, papel=pap, [pl,ps]=PAPEL[papel];
-  const pw=paisagem?pl:ps, ph=paisagem?ps:pl; // folha em mm na orientacao escolhida
-  const M=10, legenda=8, areaW=pw-2*M, areaH=ph-2*M-legenda;
-  // pixels de saida (200 dpi) com a mesma proporcao da janela, ajustados a area util da folha
-  const pxMm=200/25.4, esc=Math.min(areaW*pxMm/w,areaH*pxMm/h);
-  const W=Math.round(w*esc), H=Math.round(h*esc);
-  const fw=view.clientWidth, fh=view.clientHeight;
-  const bgAnt=scene.background; scene.background=new THREE.Color(0xffffff); grid.visible=false;
+// Imprime exatamente o que esta na tela (mesma vista e enquadramento), sem a grade, pelo dialogo
+// nativo de impressao do computador. Retrato ou paisagem conforme a proporcao da tela.
+function imprimir(){
+  const fw=view.clientWidth, fh=view.clientHeight, paisagem=fw>=fh;
+  const esc=Math.min(3,Math.max(1,2400/Math.max(fw,fh)));      // ~2400 px no lado maior
+  const W=Math.round(fw*esc), H=Math.round(fh*esc);
+  const bgAnt=scene.background; scene.background=new THREE.Color(0xffffff);
+  grid.visible=false; guia.visible=false; marca.visible=false;
   renderer.setPixelRatio(1); renderer.setSize(W,H,false);
-  camera.setViewOffset(fw,fh,x,y,w,h); camera.updateProjectionMatrix();
   renderer.render(scene,camera);
   const url=renderer.domElement.toDataURL('image/png');
-  camera.clearViewOffset(); scene.background=bgAnt; grid.visible=true;
+  scene.background=bgAnt; grid.visible=true;
   renderer.setPixelRatio(Math.min(devicePixelRatio,2)); ajusta();
-  const hoje=new Date().toLocaleDateString('pt-BR');
   const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
   f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><title>RedesAgua</title><style>
-    @page{size:${papel} ${paisagem?'landscape':'portrait'};margin:${M}mm}
-    html,body{margin:0;padding:0;font:11px system-ui,sans-serif;color:#222}
-    .box{width:${areaW}mm;height:${areaH}mm;display:flex;align-items:center;justify-content:center;border:.3mm solid #999;box-sizing:border-box}
-    img{max-width:100%;max-height:100%;object-fit:contain}
-    .cap{height:${legenda}mm;display:flex;align-items:flex-end;justify-content:space-between}
-  </style></head><body><div class="box"><img id="i" src="${url}"></div>
-  <div class="cap"><span>RedesAgua — rede de água</span><span>${papel} ${paisagem?'paisagem':'retrato'} — ${hoje}</span></div></body></html>`;
+    @page{size:${paisagem?'landscape':'portrait'};margin:8mm}
+    html,body{margin:0;padding:0;height:100%}
+    img{display:block;width:100%;height:calc(100vh - 1mm);object-fit:contain}
+  </style></head><body><img id="i" src="${url}"></body></html>`;
   f.onload=()=>{const im=f.contentDocument.getElementById('i');const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)};im.complete?go():im.onload=go};
   document.body.appendChild(f);
-  msg(`Imprimindo janela em ${papel} ${paisagem?'paisagem':'retrato'}, ajustada à folha.`,'ok');
+  msg(`Abrindo a impressão da tela atual (${paisagem?'paisagem':'retrato'}).`,'ok');
 }
 
 /* ---------- Dialogo de peca (igual a janela P do plugin, com previa 3D) ---------- */
