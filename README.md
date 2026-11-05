@@ -108,6 +108,7 @@ Comandos: `REDE`, `CONTINUAR`, `QUANT`, `IMPRIMIR`, `VISTA`, `PLANTA`, `FRENTE`,
 - `CONTINUAR`, `IMPRIMIR` (imprime a tela como está, sem a grade, pela impressão nativa do computador; retrato/paisagem automático) e `IMPRIMIRPB` (versão para impressora preto e branco: tons de cinza bem separados por tipo de peça e contorno preto) e `QUANT` (tela e CSV).
 
 Publicada em https://eloycasaglande.github.io/water-network-plugin/web/ (GitHub Pages).
+O botão **Guia rápido** (ao lado do **?**) ensina o passo a passo de forma bem simples.
 O plugin do ZWCAD/AutoCAD continua como está.
 
 ## Comandos

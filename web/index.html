@@ -35,6 +35,13 @@ button.tog.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 #chips button{padding:2px 8px;font:12px system-ui}
 dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:880px;width:94vw;max-height:88vh;padding:14px}
 dialog#dlgPeca{max-width:720px}
+dialog#dlgGuia{max-width:640px}
+.passo{display:flex;gap:12px;align-items:flex-start;margin:10px 0;padding:10px 12px;border-radius:12px;background:var(--bg);border:1px solid var(--line)}
+.passo .n{flex:none;width:38px;height:38px;border-radius:50%;background:var(--acc);color:var(--acc-ink);font-weight:800;font-size:20px;display:flex;align-items:center;justify-content:center}
+.passo .t{font-size:16px;line-height:1.45}
+.passo .t small{display:block;color:var(--mut);font-size:13px;margin-top:2px}
+.tecla{display:inline-block;padding:0 7px;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;background:var(--panel);font:700 14px ui-monospace,Consolas,monospace}
+.treino{background:var(--bg);border:2px dashed var(--acc);border-radius:12px;padding:10px 14px;font-size:15px;line-height:1.9}
 #hov{position:absolute;pointer-events:none;z-index:6;background:var(--panel);border:1px solid var(--acc);border-radius:6px;padding:6px 10px;font-size:12px;line-height:1.45;box-shadow:0 2px 10px rgba(0,0,0,.2);max-width:360px}
 .pcgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:700px){.pcgrid{grid-template-columns:1fr}}
@@ -92,6 +99,7 @@ h3{margin:10px 0 0;font-size:14px}
   <button class="tog" id="snap" title="F3">Snap</button>
   <span class="sep"></span>
   <button id="ajuda" title="Ajuda: comandos e atalhos" aria-label="Ajuda" style="font-weight:700;border-radius:50%;width:30px;height:30px;padding:0">?</button>
+  <button id="guia" class="pri" title="Passo a passo bem fácil para começar">Guia rápido</button>
   <input type="file" id="file" accept=".json,application/json" class="hide">
 </div>
 <div id="main">
@@ -109,6 +117,27 @@ h3{margin:10px 0 0;font-size:14px}
 
 <dialog id="dlg"><div id="dlgBody"></div>
   <div class="btns"><button class="pri" id="csv">Baixar CSV</button><button id="fechar">Fechar</button></div>
+</dialog>
+
+<dialog id="dlgGuia">
+  <h2 style="margin:0 0 2px;font-size:22px">Guia rápido: vamos fazer um cano!</h2>
+  <div style="color:var(--mut);font-size:14px">É como brincar de montar canos. Siga os passos, um de cada vez.</div>
+
+  <div class="passo"><div class="n">1</div><div class="t">Aperte o botão azul <b>Rede</b> lá em cima.<small>Pronto! Você pegou o primeiro cano.</small></div></div>
+  <div class="passo"><div class="n">2</div><div class="t">Lá embaixo o computador faz perguntas. Aperte <span class="tecla">Enter</span> duas vezes para dizer "pode ser".<small>Ele pergunta do que o cano é feito e o tamanho dele.</small></div></div>
+  <div class="passo"><div class="n">3</div><div class="t">Clique em qualquer lugar da tela grande do desenho. É onde o cano começa.<small>Ou digite <b>0,0,0</b> e aperte <span class="tecla">Enter</span>.</small></div></div>
+  <div class="passo"><div class="n">4</div><div class="t">Digite um número, por exemplo <b>500</b>, e aperte <span class="tecla">Enter</span>.<small>Apareceu um cano! O número é o comprimento em centímetros: 500 é 5 metros.</small></div></div>
+  <div class="passo"><div class="n">5</div><div class="t">Quer o cano mais comprido? Digite outro número e <span class="tecla">Enter</span>. Pode repetir quantas vezes quiser.<small>Também dá para clicar na tela onde você quer que o cano termine.</small></div></div>
+  <div class="passo"><div class="n">6</div><div class="t">Quer dobrar o cano? Clique no botão pequeno <b>Curva</b> lá embaixo e responda às perguntas.<small>Dica: <span class="tecla">Enter</span> escolhe a resposta que já vem pronta.</small></div></div>
+  <div class="passo"><div class="n">7</div><div class="t">Quer um registro, um tê ou outra peça? Clique no botão pequeno <b>Peça</b>, escolha na lista e aperte <b>OK</b>.<small>Você vê a peça girando na janelinha antes de escolher.</small></div></div>
+  <div class="passo"><div class="n">8</div><div class="t">Errou? Clique em <b>Desfazer</b>. Terminou? Aperte <span class="tecla">Enter</span> sem escrever nada.<small>O <span class="tecla">Esc</span> cancela o que você estava fazendo.</small></div></div>
+  <div class="passo"><div class="n">9</div><div class="t">Para olhar de outro jeito: segure o <b>botão direito</b> do mouse e arraste para girar. Gire a <b>rodinha</b> para chegar perto ou longe.<small>Os botões <b>Iso</b>, <b>Planta</b> e <b>Frente</b> mudam de lado de uma vez. <b>Zoom ext.</b> mostra tudo.</small></div></div>
+  <div class="passo"><div class="n">10</div><div class="t">Quer saber o que é uma peça? Passe o mouse em cima dela e espere.<small>Aparece uma caixinha com o nome e o tamanho.</small></div></div>
+  <div class="passo"><div class="n">11</div><div class="t">Para guardar seu trabalho, clique em <b>Salvar</b>. Para pôr no papel, clique em <b>Imprimir</b>.<small>Impressora só preto e branco? Use <b>Imprimir P&amp;B</b>. Para a lista de materiais, use <b>Quantitativo</b>.</small></div></div>
+
+  <h3 style="margin-top:14px">Treino de 1 minuto</h3>
+  <div class="treino">Aperte <b>Rede</b> → <span class="tecla">Enter</span> → <span class="tecla">Enter</span> → digite <b>0,0,0</b> <span class="tecla">Enter</span> → digite <b>500</b> <span class="tecla">Enter</span> → <span class="tecla">Enter</span>.<br>Você acabou de desenhar um cano de 5 metros!</div>
+  <div class="btns"><button class="pri" id="guiaFechar">Entendi!</button></div>
 </dialog>
 
 <dialog id="dlgAjuda">
@@ -1148,7 +1177,17 @@ function executarTexto(txt){
   const nomes=Object.keys(COMANDOS), n=nomes.find(x=>norm(x)===t)||(nomes.filter(x=>norm(x).startsWith(t)).length===1?nomes.find(x=>norm(x).startsWith(t)):null);
   if(n) executar(n); else msg('Comando desconhecido: '+txt+'  (REDE, CONTINUAR, QUANT, IMPRIMIR, IMPRIMIRPB, VISTA, PLANTA, FRENTE, ZOOM, DESFAZER, SALVAR, ABRIR, EXPORTAR, IMPORTAR)','warn');
 }
-document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{ if(ocupado&&pend&&b.dataset.cmd!=='REDE'&&!['VISTA','PLANTA','FRENTE','ZOOM'].includes(b.dataset.cmd)){msg('Termine ou cancele (Esc) o comando atual.','warn');return} executar(b.dataset.cmd)});
+// Com um comando em andamento (ex.: dentro da REDE), estes botoes continuam funcionando sem atrapalhar.
+const SEGUROS=['QUANT','IMPRIMIR','IMPRIMIRPB','SALVAR','EXPORTAR','VISTA','PLANTA','FRENTE','ZOOM'];
+document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{
+  const c=b.dataset.cmd;
+  if(ocupado){
+    if(SEGUROS.includes(c)){try{COMANDOS[c]()}catch(err){msg('Erro: '+err.message,'warn')}return}
+    if(c==='DESFAZER'&&pend&&(pend.o.kw||[]).includes('Desfazer')){resolveTexto('Desfazer');return}
+    msg('Termine ou cancele (Esc) o comando atual.','warn');return;
+  }
+  executar(c);
+});
 
 /* ---------- Vistas ---------- */
 const VISTAS={iso:new THREE.Vector3(-1,-1,.8),planta:new THREE.Vector3(0,-.0005,1),frente:new THREE.Vector3(0,-1,0)};
@@ -1428,6 +1467,8 @@ $('fechar').onclick=()=>$('dlg').close();
 $('csv').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ultimoCsv],{type:'text/csv;charset=utf-8'}));a.download='Quantitativo_RedesAgua.csv';a.click()};
 $('ajuda').onclick=()=>{$('dlgAjuda').showModal();$('dlgAjuda').scrollTop=0};
 $('ajudaFechar').onclick=()=>$('dlgAjuda').close();
+$('guia').onclick=()=>{$('dlgGuia').showModal();$('dlgGuia').scrollTop=0};
+$('guiaFechar').onclick=()=>$('dlgGuia').close();
 
 /* ---------- Hover sobre as pecas ---------- */
 const hov=$('hov'); let hovId=null, hovRaf=0, hovEv=null; const matHi=new Map();
