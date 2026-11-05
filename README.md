@@ -105,7 +105,7 @@ Comandos: `REDE`, `CONTINUAR`, `QUANT`, `IMPRIMIR`, `VISTA`, `PLANTA`, `FRENTE`,
 - `Peça`: a mesma janela de peças do plugin (23 itens, extremidades, DN, ângulo, redução na derivação) com **pré-visualização 3D** (arraste para girar, roda para zoom). As peças usam a mesma geometria do plugin.
 - Passar o mouse sobre uma peça destaca e mostra nome, DN, extremidades e comprimento.
 - `SALVAR`/`ABRIR` guardam a rede **neste navegador** (também há salvamento automático); `EXPORTAR`/`IMPORTAR` usam arquivo `.json`.
-- `CONTINUAR`, `IMPRIMIR` (imprime a tela como está, sem a grade, pela impressão nativa do computador; retrato/paisagem automático) e `QUANT` (tela e CSV).
+- `CONTINUAR`, `IMPRIMIR` (imprime a tela como está, sem a grade, pela impressão nativa do computador; retrato/paisagem automático) e `IMPRIMIRPB` (versão para impressora preto e branco: tons de cinza bem separados por tipo de peça e contorno preto) e `QUANT` (tela e CSV).
 
 Publicada em https://eloycasaglande.github.io/water-network-plugin/web/ (GitHub Pages).
 O plugin do ZWCAD/AutoCAD continua como está.

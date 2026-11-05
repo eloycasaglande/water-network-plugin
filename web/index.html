@@ -74,6 +74,7 @@ h3{margin:10px 0 0;font-size:14px}
   <button data-cmd="CONTINUAR">Continuar</button>
   <button data-cmd="QUANT">Quantitativo</button>
   <button data-cmd="IMPRIMIR">Imprimir</button>
+  <button data-cmd="IMPRIMIRPB" title="Tons de cinza bem separados e contorno, para impressora preto e branco">Imprimir P&amp;B</button>
   <span class="sep"></span>
   <button data-cmd="DESFAZER">Desfazer</button>
   <button data-cmd="LIMPAR">Limpar</button>
@@ -119,6 +120,7 @@ h3{margin:10px 0 0;font-size:14px}
     <tr><td><b>CONTINUAR</b></td><td>Retoma uma rede existente: clique num tubo ou peça e escolha continuar pela <i>Entrada</i>, <i>Saída</i> ou <i>Derivação</i> (tê).</td></tr>
     <tr><td><b>QUANT</b></td><td>Mostra o quantitativo (tubos em metros, peças, parafusos, porcas, arruelas, juntas e avisos de ligação incompatível) e permite baixar em CSV.</td></tr>
     <tr><td><b>IMPRIMIR</b></td><td>Imprime o que está na tela, do jeito que está (mesma vista e zoom), sem a grade, pela janela de impressão do computador. Retrato ou paisagem é escolhido pela proporção da tela e a imagem é ajustada à folha. Enquadre a vista antes (Zoom ext., Iso, Planta...).</td></tr>
+    <tr><td><b>IMPRIMIRPB</b></td><td>Igual ao IMPRIMIR, mas para impressora preto e branco: cada tipo de peça sai num tom de cinza bem diferente (tubo cinza médio, peças claras, registro bem escuro, ventosa quase branca...) e com contorno preto, para distinguir bem no papel A4.</td></tr>
     <tr><td><b>DESFAZER</b> (ou <b>U</b>)</td><td>Remove o último elemento criado.</td></tr>
     <tr><td><b>LIMPAR</b></td><td>Apaga toda a rede (pede confirmação).</td></tr>
     <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td>Salva a rede neste navegador (fica guardada mesmo fechando a página) e abre de novo o que foi salvo. A rede também é guardada automaticamente a cada alteração e volta quando você reabre a página.</td></tr>
@@ -304,9 +306,10 @@ const V3=THREE.Vector3;
 const Zax=new V3(0,0,1), Yax=new V3(0,1,0);
 const cache={};
 const cor3=c=>new THREE.Color(c);
-const mOut=c=>cache['o'+c]||(cache['o'+c]=new THREE.MeshStandardMaterial({color:c,roughness:.5,metalness:.25}));
-const mIn=c=>cache['i'+c]||(cache['i'+c]=new THREE.MeshStandardMaterial({color:cor3(c).multiplyScalar(.5),roughness:.8,metalness:.1,side:THREE.BackSide}));
-const mRing=c=>cache['r'+c]||(cache['r'+c]=new THREE.MeshStandardMaterial({color:c,roughness:.5,metalness:.25,side:THREE.DoubleSide}));
+const tag=(m,c,k)=>{m.userData.base=c;m.userData.kind=k;return m};
+const mOut=c=>cache['o'+c]||(cache['o'+c]=tag(new THREE.MeshStandardMaterial({color:c,roughness:.5,metalness:.25}),c,'o'));
+const mIn=c=>cache['i'+c]||(cache['i'+c]=tag(new THREE.MeshStandardMaterial({color:cor3(c).multiplyScalar(.5),roughness:.8,metalness:.1,side:THREE.BackSide}),c,'i'));
+const mRing=c=>cache['r'+c]||(cache['r'+c]=tag(new THREE.MeshStandardMaterial({color:c,roughness:.5,metalness:.25,side:THREE.DoubleSide}),c,'r'));
 const Sx=(g,c)=>({g,c,mo:mOut(c),mi:mIn(c),mr:mRing(c)});
 function shell(S,a,b,r1,r2,mat){ // casca aberta de a (raio r1) ate b (raio r2)
   const d=b.clone().sub(a),len=d.length(); if(len<1e-5) return; d.divideScalar(len);
@@ -1117,14 +1120,18 @@ async function cmdContinuar(){
 }
 function cmdImprimir(){
   if(!rede.length){msg('A rede está vazia.','warn');return}
-  imprimir();
+  imprimir(false);
+}
+function cmdImprimirPB(){
+  if(!rede.length){msg('A rede está vazia.','warn');return}
+  imprimir(true);
 }
 function cmdQuant(){if(!rede.length){msg('A rede está vazia.','warn');return}mostraQuant()}
 function cmdDesfazerGeral(){if(!rede.length){msg('Nada para desfazer.','warn');return}desfazer();enquadrarSuave()}
 function cmdLimpar(){if(!rede.length||confirm('Apagar toda a rede?')){limpar();msg('Rede apagada.','ok')}}
 
 const COMANDOS={
-  REDE:cmdRede, CONTINUAR:cmdContinuar, QUANT:cmdQuant, IMPRIMIR:cmdImprimir,
+  REDE:cmdRede, CONTINUAR:cmdContinuar, QUANT:cmdQuant, IMPRIMIR:cmdImprimir, IMPRIMIRPB:cmdImprimirPB,
   VISTA:()=>vista('iso'), PLANTA:()=>vista('planta'), FRENTE:()=>vista('frente'), ZOOM:()=>vista('fit'),
   DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, SALVAR:salvarLocal, ABRIR:abrirLocal, EXPORTAR:exportarArquivo, IMPORTAR:()=>$('file').click()
 };
@@ -1139,7 +1146,7 @@ function executarTexto(txt){
   let t=norm(txt.trim()).replace(/^agua_/,''); if(!t&&ultimoCmd){executar(ultimoCmd);return}
   if(!t) return;
   const nomes=Object.keys(COMANDOS), n=nomes.find(x=>norm(x)===t)||(nomes.filter(x=>norm(x).startsWith(t)).length===1?nomes.find(x=>norm(x).startsWith(t)):null);
-  if(n) executar(n); else msg('Comando desconhecido: '+txt+'  (REDE, CONTINUAR, QUANT, IMPRIMIR, VISTA, PLANTA, FRENTE, ZOOM, DESFAZER, SALVAR, ABRIR, EXPORTAR, IMPORTAR)','warn');
+  if(n) executar(n); else msg('Comando desconhecido: '+txt+'  (REDE, CONTINUAR, QUANT, IMPRIMIR, IMPRIMIRPB, VISTA, PLANTA, FRENTE, ZOOM, DESFAZER, SALVAR, ABRIR, EXPORTAR, IMPORTAR)','warn');
 }
 document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{ if(ocupado&&pend&&b.dataset.cmd!=='REDE'&&!['VISTA','PLANTA','FRENTE','ZOOM'].includes(b.dataset.cmd)){msg('Termine ou cancele (Esc) o comando atual.','warn');return} executar(b.dataset.cmd)});
 
@@ -1160,15 +1167,40 @@ function enquadrarSuave(){if(rede.length)enquadrar(camera.position.clone().sub(c
 
 // Imprime exatamente o que esta na tela (mesma vista e enquadramento), sem a grade, pelo dialogo
 // nativo de impressao do computador. Retrato ou paisagem conforme a proporcao da tela.
-function imprimir(){
+// pb = true: tons de cinza bem separados entre os tipos de peca + contorno preto (impressora P&B).
+const CINZA={}; // cor original -> cinza de impressao (cada categoria cai num nivel diferente)
+CINZA[COR.tubo]=0x7c7c7c; CINZA[COR.aluminio]=0xb0b0b0; CINZA[COR.peca]=0xd6d6d6; CINZA[COR.reg]=0x262626;
+CINZA[COR.ret]=0x9a9a9a; CINZA[COR.vrp]=0x555555; CINZA[COR.vent]=0xf2f2f2; CINZA[COR.bor]=0x3c3c3c;
+CINZA[COR.jd]=0xbcbcbc; CINZA[COR.solda]=0x636363;
+const matPB=new Map();
+function matCinza(m){
+  let g=matPB.get(m); if(g) return g;
+  let v=CINZA[m.userData.base]; if(v==null) v=0xa0a0a0;
+  const c=new THREE.Color(v); if(m.userData.kind==='i') c.multiplyScalar(0.6);
+  g=new THREE.MeshStandardMaterial({color:c,roughness:.6,metalness:0,side:m.side}); g.userData=m.userData;
+  matPB.set(m,g); return g;
+}
+function aplicaPB(){
+  const trocas=[], linhas=[], lm=new THREE.LineBasicMaterial({color:0x000000});
+  raiz.traverse(o=>{
+    if(!o.isMesh||!o.material||!o.material.userData||o.material.userData.kind==null) return;
+    const m0=o.material; trocas.push([o,m0]); o.material=matCinza(m0.userData.hi||m0);
+    if(m0.userData.kind==='o'){const l=new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry,35),lm);o.add(l);linhas.push(l)}
+  });
+  return ()=>{for(const [o,m] of trocas)o.material=m;for(const l of linhas){l.parent.remove(l);l.geometry.dispose()}};
+}
+function imprimir(pb){
+  esconderHover();
   const fw=view.clientWidth, fh=view.clientHeight, paisagem=fw>=fh;
   const esc=Math.min(3,Math.max(1,2400/Math.max(fw,fh)));      // ~2400 px no lado maior
   const W=Math.round(fw*esc), H=Math.round(fh*esc);
   const bgAnt=scene.background; scene.background=new THREE.Color(0xffffff);
   grid.visible=false; guia.visible=false; marca.visible=false;
+  const desfaz=pb?aplicaPB():null;
   renderer.setPixelRatio(1); renderer.setSize(W,H,false);
   renderer.render(scene,camera);
   const url=renderer.domElement.toDataURL('image/png');
+  if(desfaz) desfaz();
   scene.background=bgAnt; grid.visible=true;
   renderer.setPixelRatio(Math.min(devicePixelRatio,2)); ajusta();
   const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
@@ -1180,7 +1212,7 @@ function imprimir(){
   </style></head><body><img id="i" src="${url}"></body></html>`;
   f.onload=()=>{const im=f.contentDocument.getElementById('i');const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)};im.complete?go():im.onload=go};
   document.body.appendChild(f);
-  msg(`Abrindo a impressão da tela atual (${paisagem?'paisagem':'retrato'}).`,'ok');
+  msg(`Abrindo a impressão da tela atual (${paisagem?'paisagem':'retrato'}${pb?', preto e branco com tons de cinza':', colorida'}).`,'ok');
 }
 
 /* ---------- Dialogo de peca (igual a janela P do plugin, com previa 3D) ---------- */
