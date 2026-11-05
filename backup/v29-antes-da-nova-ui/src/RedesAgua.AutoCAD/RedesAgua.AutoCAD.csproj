@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Mesma base de codigo do ZWCAD (src\RedesAgua), compilada contra a API do AutoCAD 2025 (.NET 8). -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>RedesAgua</RootNamespace>
+    <AssemblyName>RedesAgua</AssemblyName>
+    <DefineConstants>$(DefineConstants);ACAD</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\RedesAgua\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- API do AutoCAD 2025 (referencias de compilacao; em execucao quem carrega e o proprio AutoCAD). -->
+    <PackageReference Include="AutoCAD.NET" Version="25.0.1" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+</Project>

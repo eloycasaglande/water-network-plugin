@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Instalador do plugin para o AutoCAD 2025: um unico .exe (net48, ja presente no Windows 10/11)
+       com a DLL embutida. Copia o plugin para a pasta ApplicationPlugins do usuario (carrega sozinho). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>InstalarRedesAgua_AutoCAD2025</AssemblyName>
+    <RootNamespace>Instalador</RootNamespace>
+    <PluginDll Condition="'$(PluginDll)' == ''">$(MSBuildProjectDirectory)\..\..\dist\v16-autocad\RedesAgua.dll</PluginDll>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(PluginDll)" LogicalName="RedesAgua.dll" />
+  </ItemGroup>
+
+</Project>
