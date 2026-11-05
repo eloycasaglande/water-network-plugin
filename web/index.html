@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RedesAgua Web</title>
+<style>
+:root{--bg:#f4f6f8;--panel:#fff;--ink:#1d2733;--mut:#5d6b7a;--line:#d9e0e7;--acc:#1f6fb2;--acc-ink:#fff;--warn:#b4531a;--ok:#1d7a4a}
+@media (prefers-color-scheme:dark){:root{--bg:#10161d;--panel:#18212b;--ink:#e6edf3;--mut:#93a1b0;--line:#2b3744;--acc:#4a9be0;--acc-ink:#07131f;--warn:#e89a62;--ok:#5fcf93}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,Segoe UI,Roboto,sans-serif}
+#app{display:grid;grid-template-columns:340px 1fr;height:100%}
+#side{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:12px 14px}
+h1{font-size:17px;margin:0 0 2px}
+.sub{color:var(--mut);font-size:12px;margin-bottom:10px}
+fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 10px;padding:8px 10px 10px}
+legend{font-weight:600;padding:0 6px;font-size:13px}
+label{display:block;font-size:12px;color:var(--mut);margin:6px 0 2px}
+select,input[type=number],input[type=text]{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+.row{display:flex;gap:6px}.row>*{flex:1;min-width:0}
+button{padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+button.pri{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);font-weight:600}
+button:hover{filter:brightness(.96)}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.hide{display:none!important}
+#main{position:relative;min-width:0;min-height:0}
+#view{position:absolute;inset:0}
+#view canvas{display:block;width:100%;height:100%}
+#status{position:absolute;left:10px;bottom:10px;right:10px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:13px;pointer-events:none}
+#status.warn{color:var(--warn)}#status.ok{color:var(--ok)}
+#tools{position:absolute;top:10px;right:10px;display:flex;gap:6px}
+#sel{position:absolute;inset:0;cursor:crosshair;background:rgba(31,111,178,.06);z-index:5}
+#selrect{position:absolute;border:2px dashed var(--acc);background:rgba(31,111,178,.15)}
+#selhint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);padding:6px 12px;border-radius:6px}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:880px;width:94vw;max-height:88vh;padding:14px}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+table{border-collapse:collapse;width:100%;margin:6px 0 12px;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+h3{margin:10px 0 0;font-size:14px}
+.warnli{color:var(--warn)}
+@media (max-width:780px){#app{grid-template-columns:1fr;grid-template-rows:auto 60vh}#side{max-height:50vh}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app">
+<aside id="side">
+  <h1>RedesAgua Web</h1>
+  <div class="sub">Redes de água em 3D no navegador. Dimensões provisórias: confira com o catálogo do fabricante.</div>
+
+  <fieldset><legend>Continuar de</legend>
+    <select id="fonte"></select>
+    <div id="novo">
+      <div class="row">
+        <div><label>X (m)</label><input type="number" id="x0" value="0" step="any"></div>
+        <div><label>Y (m)</label><input type="number" id="y0" value="0" step="any"></div>
+        <div><label>Z (m)</label><input type="number" id="z0" value="0" step="any"></div>
+      </div>
+      <div class="row">
+        <div><label>Sentido inicial</label><select id="d0"><option value="1,0,0">+X (Leste)</option><option value="0,1,0">+Y (Norte)</option><option value="-1,0,0">−X (Oeste)</option><option value="0,-1,0">−Y (Sul)</option><option value="0,0,1">+Z (Cima)</option><option value="0,0,-1">−Z (Baixo)</option></select></div>
+        <div><label>Material</label><select id="mat"><option>DEFoFo</option><option>PVCO</option><option>PVC</option><option>PEAD</option></select></div>
+        <div><label>DN</label><select id="dn"></select></div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset><legend>Tubo</legend>
+    <label>Comprimento (m)</label><input type="number" id="ltubo" value="6" min="0.1" step="any">
+    <div class="btns"><button class="pri" id="addTubo">Adicionar tubo</button></div>
+  </fieldset>
+
+  <fieldset><legend>Peça / curva</legend>
+    <label>Tipo</label><select id="tipo"></select>
+    <div class="row" id="fAngDir">
+      <div id="fAng"><label>Ângulo</label><select id="ang"><option>90</option><option>45</option><option>22.5</option><option>11.25</option></select></div>
+      <div id="fDir"><label id="lDir">Direção</label><select id="dir"><option>Direita</option><option>Esquerda</option><option>Cima</option><option>Baixo</option></select></div>
+    </div>
+    <div class="row">
+      <div id="fDn2"><label id="lDn2">DN 2</label><select id="dn2"></select></div>
+      <div id="fLen"><label>Comprimento (mm)</label><input type="number" id="len" min="20" step="10"></div>
+    </div>
+    <div class="row">
+      <div id="fIn"><label>Entrada</label><select id="eIn"></select></div>
+      <div id="fOut"><label>Saída</label><select id="eOut"></select></div>
+      <div id="fBr"><label>Derivação</label><select id="eBr"></select></div>
+    </div>
+    <div class="btns"><button class="pri" id="addPeca">Adicionar peça</button></div>
+  </fieldset>
+
+  <fieldset><legend>Projeto</legend>
+    <div class="btns">
+      <button id="undo">Desfazer</button><button id="clear">Limpar</button>
+      <button id="quant">Quantitativo</button>
+      <button id="save">Salvar</button><button id="load">Abrir</button>
+    </div>
+    <input type="file" id="file" accept=".json,application/json" class="hide">
+  </fieldset>
+
+  <fieldset><legend>Imprimir</legend>
+    <div class="row">
+      <div><label>Papel</label><select id="papel"><option value="A4">A4</option><option value="A3" selected>A3</option></select></div>
+    </div>
+    <div class="btns"><button class="pri" id="print">Selecionar janela e imprimir</button></div>
+    <div class="sub" style="margin:6px 0 0">Arraste um retângulo sobre o desenho. Retrato ou paisagem é escolhido pela proporção da janela e a imagem é ajustada à folha.</div>
+  </fieldset>
+</aside>
+
+<main id="main">
+  <div id="view"></div>
+  <div id="tools">
+    <button data-v="iso">Isométrica</button><button data-v="planta">Planta</button><button data-v="frente">Frente</button><button data-v="fit">Enquadrar</button>
+  </div>
+  <div id="status">Escolha o ponto inicial e adicione tubos e peças.</div>
+</main>
+</div>
+
+<dialog id="dlg"><div id="dlgBody"></div>
+  <div class="btns"><button class="pri" id="csv">Baixar CSV</button><button id="fechar">Fechar</button></div>
+</dialog>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const K = 0.001; // mm -> m (a cena e em metros, Z para cima)
+
+/* ---------- Catalogo (mm) - provisorio, igual ao plugin do ZWCAD ---------- */
+const DNs=[50,65,80,100,125,150,200,250,300,350,400,450,500,600,700];
+const T={
+  De:[66,82,98,118,144,170,222,274,326,378,429,480,532,635,738],
+  FlOD:[165,185,200,220,250,285,340,395,445,505,565,615,670,780,895],
+  FlT:[19,19,19,19,19,19,20,22,24.5,26,28,28,28.5,31.5,35],
+  ParN:[4,4,8,8,8,8,8,12,12,16,16,20,20,20,24],
+  ParM:[16,16,16,16,16,20,20,20,20,20,24,24,24,27,27],
+  RegL:[150,170,180,190,200,210,230,250,270,290,310,330,350,390,430],
+  JmN:[4,4,4,4,6,6,6,8,8,10,12,12,14,16,18],
+  JmM:[16,16,16,16,16,20,20,20,20,20,20,24,24,24,24]};
+const PARAF=[40,45,50,55,60,65,70,75,80,90,100,110,120,130,140,150,160,180,200];
+const ix=dn=>{let b=0;for(let i=1;i<DNs.length;i++)if(Math.abs(DNs[i]-dn)<Math.abs(DNs[b]-dn))b=i;return b};
+const Cat={
+  de:dn=>T.De[ix(dn)], flOD:dn=>T.FlOD[ix(dn)], flT:dn=>T.FlT[ix(dn)],
+  parN:dn=>T.ParN[ix(dn)], parM:dn=>T.ParM[ix(dn)], regL:dn=>T.RegL[ix(dn)],
+  jmN:dn=>T.JmN[ix(dn)], jmM:dn=>T.JmM[ix(dn)],
+  bolsa:dn=>Math.round(80+0.4*dn),
+  raioCurva:dn=>Math.max(1.5*dn,100), raioJoelho:dn=>Math.max(dn,60),
+  jdLen:dn=>Math.round((150+0.4*dn)/10)*10,
+  parLen(dn){const d=this.parM(dn),n=2*this.flT(dn)+3+0.8*d+0.2*d+0.6*d;return PARAF.find(c=>c>=n)||Math.ceil(n/10)*10},
+  jmParLen(dn){const d=this.jmM(dn),n=20+22+0.8*d+15;return PARAF.find(c=>c>=n)||Math.ceil(n/10)*10}
+};
+const rM=dn=>Cat.de(dn)/2*K;
+
+/* ---------- Pecas ---------- */
+const TODAS=['PONTA','BOLSA','FLANGE','JM'];
+const END_NOME={PONTA:'Ponta',BOLSA:'Bolsa',FLANGE:'Flange',JM:'Junta mecânica'};
+const BF=['FLANGE','BOLSA'];
+// in/out/br: opcoes de extremidade (1 opcao = fixa); ausente = sem essa extremidade; def = padrao
+const PECAS={
+  CURVA:{nome:'Curva',ang:1,dir:1,in:TODAS,out:TODAS,def:['BOLSA','BOLSA']},
+  JOELHO:{nome:'Joelho',ang:1,dir:1,in:TODAS,out:TODAS,def:['BOLSA','BOLSA']},
+  RETA:{nome:'Peça reta',len:1,in:TODAS,out:TODAS,def:['FLANGE','FLANGE'],L:()=>500},
+  CARRETEL:{nome:'Carretel flangeado',len:1,in:['FLANGE'],out:['FLANGE'],L:()=>500},
+  LUVA:{nome:'Luva (bolsa-bolsa)',len:1,in:['BOLSA'],out:['BOLSA'],L:dn=>2*Cat.bolsa(dn)+20},
+  JM:{nome:'Junta mecânica (luva JM)',len:1,in:['JM'],out:['JM'],L:dn=>220+0.2*dn},
+  LUVA_LR:{nome:'Luva de redução (LR)',dn2:1,len:1,in:['BOLSA'],out:['BOLSA'],L:dn=>2*Cat.bolsa(dn)+30},
+  REDUCAO:{nome:'Redução / aumento',dn2:1,len:1,in:TODAS,out:TODAS,def:['FLANGE','FLANGE'],L:()=>300},
+  TE:{nome:'Tê',dn2:1,dir:1,in:TODAS,out:TODAS,br:TODAS,def:['BOLSA','BOLSA','BOLSA'],L:dn=>300+dn},
+  REG_GAVETA:{nome:'Registro de gaveta',in:BF,out:BF,sync:1,def:['FLANGE','FLANGE'],L:dn=>Cat.regL(dn)},
+  BORBOLETA:{nome:'Registro borboleta',in:BF,out:BF,sync:1,def:['FLANGE','FLANGE'],L:dn=>Cat.regL(dn)*0.7},
+  RETENCAO:{nome:'Válvula de retenção',in:BF,out:BF,sync:1,def:['FLANGE','FLANGE'],L:dn=>Cat.regL(dn)*1.3},
+  VRP:{nome:'Válvula redutora de pressão (VRP)',in:['FLANGE'],out:['FLANGE'],L:dn=>Cat.regL(dn)*1.8},
+  VENTOSA:{nome:'Ventosa',in:BF,def:['FLANGE'],L:dn=>400+dn},
+  JD:{nome:'Junta de desmontagem',len:1,in:['FLANGE'],out:['FLANGE'],L:dn=>Cat.jdLen(dn)},
+  PONTA_FLANGE:{nome:'Ponta-flange',len:1,in:['FLANGE'],out:['PONTA'],L:()=>300},
+  BOLSA_FLANGE:{nome:'Bolsa-flange',len:1,in:['BOLSA'],out:['FLANGE'],L:dn=>Cat.bolsa(dn)+200},
+  CAP:{nome:'Cap / flange cego',in:['BOLSA','JM','FLANGE'],def:['BOLSA'],L:dn=>Cat.bolsa(dn)+30},
+  FLANGE_ANEL:{nome:'Flange (anel)',in:['FLANGE'],L:dn=>Cat.flT(dn)}
+};
+const nomeEl=e=>e.tipo==='TUBO'?'Tubo':PECAS[e.tipo].nome;
+
+/* ---------- Cena ---------- */
+const view=$('view');
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+view.appendChild(renderer.domElement);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xf4f6f8);
+const camera=new THREE.PerspectiveCamera(35,1,0.05,5000);
+camera.up.set(0,0,1);
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a93a3,1.15));
+const sol=new THREE.DirectionalLight(0xffffff,1.3); sol.position.set(-6,-9,12); scene.add(sol);
+const grid=new THREE.GridHelper(200,200,0x9aa6b2,0xd0d6dd); grid.rotation.x=Math.PI/2; scene.add(grid);
+const raiz=new THREE.Group(); scene.add(raiz);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+function ajusta(){const w=view.clientWidth,h=view.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(ajusta).observe(view); ajusta();
+(function loop(){controls.update();renderer.render(scene,camera);requestAnimationFrame(loop)})();
+
+const cache={};
+const mat=c=>cache[c]||(cache[c]=new THREE.MeshStandardMaterial({color:c,roughness:.55,metalness:.25}));
+const COR_MAT={DEFoFo:0x2f6fa8,PVCO:0x6fa8dc,PVC:0xc9b37a,PEAD:0x2b2f36};
+const COR_FL=0x4a5260, COR_REG=0xc0392b, COR_RET=0x2e8b57, COR_VRP=0x1fb5c9, COR_VENT=0xe0b814;
+const Yax=new THREE.Vector3(0,1,0);
+function cil(g,p,d,len,r1,r2,c){
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,Math.max(len,1e-4),32),mat(c));
+  m.position.copy(p).addScaledVector(d,len/2); m.quaternion.setFromUnitVectors(Yax,d); g.add(m); return m;
+}
+function esfera(g,p,r,c){const m=new THREE.Mesh(new THREE.SphereGeometry(r,24,16),mat(c));m.position.copy(p);g.add(m)}
+function perp(d){return Math.abs(d.z)>0.99?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1)}
+// recurso visual da extremidade: p = ponto da extremidade, into = sentido para dentro da peca
+function ext(g,p,into,end,dn,cor){
+  const r=rM(dn);
+  if(end==='FLANGE') cil(g,p,into,Cat.flT(dn)*K,Cat.flOD(dn)/2*K,Cat.flOD(dn)/2*K,COR_FL);
+  else if(end==='BOLSA') cil(g,p,into,Cat.bolsa(dn)*K,r*1.14,r*1.14,cor);
+  else if(end==='JM'){cil(g,p,into,0.025,r*1.22,r*1.22,COR_FL);cil(g,p.clone().addScaledVector(into,0.025),into,0.03,r*1.12,r*1.12,cor)}
+}
+class Arco extends THREE.Curve{
+  constructor(p,d,t,R,th){super();this.p=p;this.d=d;this.t=t;this.R=R;this.th=th}
+  getPoint(u,out=new THREE.Vector3()){const a=this.th*u;
+    return out.copy(this.p).addScaledVector(this.d,this.R*Math.sin(a)).addScaledVector(this.t,this.R*(1-Math.cos(a)))}
+}
+
+/* ---------- Modelo ---------- */
+const rede=[]; let nextId=1;
+const byId=id=>rede.find(e=>e.id===id);
+const V=a=>new THREE.Vector3(a[0],a[1],a[2]);
+
+// Direcao relativa ao rumo (Z para cima). Em tubo vertical: Direita=+X, Esquerda=-X, Cima=+Y, Baixo=-Y.
+function alvo(d,key){
+  const Z=new THREE.Vector3(0,0,1);
+  if(Math.abs(d.z)>0.999) return ({Cima:new THREE.Vector3(0,1,0),Baixo:new THREE.Vector3(0,-1,0),Direita:new THREE.Vector3(1,0,0),Esquerda:new THREE.Vector3(-1,0,0)})[key];
+  if(key==='Direita') return new THREE.Vector3().crossVectors(d,Z).normalize();
+  if(key==='Esquerda') return new THREE.Vector3().crossVectors(Z,d).normalize();
+  const s=key==='Cima'?1:-1;
+  return Z.clone().multiplyScalar(s).addScaledVector(d,-s*d.z).normalize();
+}
+function resolve(cmd){
+  const f=cmd.fonte;
+  if(f.start) return {p:V(f.start.p),d:V(f.start.d).normalize(),dn:f.start.dn,mat:f.start.mat,end:'PONTA',el:null};
+  const el=byId(f.id); if(!el) throw new Error('Origem inexistente');
+  const port=f.port==='Br'?el.pBr:el.pOut; if(!port) throw new Error('A origem não tem essa saída');
+  return {p:port.p.clone(),d:port.d.clone(),dn:port.dn,mat:el.mat,end:port.end,el,port:f.port};
+}
+
+function construir(cmd,src){
+  const t=cmd.tipo, dn=src.dn, d=src.d, p0=src.p, corMat=COR_MAT[src.mat]||0x2f6fa8;
+  const e={id:cmd.id,tipo:t,cmd,mat:src.mat,dn,dn2:null,eIn:'PONTA',eOut:'PONTA',eBr:null,
+    from:cmd.fonte.start?null:{id:cmd.fonte.id,port:cmd.fonte.port},
+    pIn:{p:p0.clone(),d:d.clone(),dn,end:'PONTA'},pOut:null,pBr:null,lenM:0,ang:null};
+  const g=new THREE.Group(); const r=rM(dn);
+  if(t==='TUBO'){
+    const L=cmd.len; e.lenM=L;
+    cil(g,p0,d,L,r,r,corMat);
+    e.pOut={p:p0.clone().addScaledVector(d,L),d:d.clone(),dn,end:'PONTA'};
+  } else if(t==='CURVA'||t==='JOELHO'){
+    const th=cmd.ang*Math.PI/180, R=(t==='CURVA'?Cat.raioCurva(dn):Cat.raioJoelho(dn))*K;
+    const tt=alvo(d,cmd.dir);
+    e.ang=cmd.ang; e.eIn=cmd.eIn; e.eOut=cmd.eOut;
+    const arc=new Arco(p0,d,tt,R,th);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(arc,Math.max(8,Math.round(cmd.ang/3)),r,32,false),mat(corMat)));
+    const pf=arc.getPoint(1), df=d.clone().multiplyScalar(Math.cos(th)).addScaledVector(tt,Math.sin(th)).normalize();
+    ext(g,p0,d,e.eIn,dn,corMat); ext(g,pf,df.clone().negate(),e.eOut,dn,corMat);
+    e.pOut={p:pf,d:df,dn,end:e.eOut}; e.lenM=R*th;
+  } else {
+    const def=PECAS[t]; const L=(cmd.len>0?cmd.len:def.L(dn))*K; e.lenM=L;
+    e.eIn=cmd.eIn||def.in[0];
+    const dnOut=def.dn2?cmd.dn2:dn; if(def.dn2) e.dn2=cmd.dn2;
+    const hasOut=!!def.out; if(hasOut) e.eOut=cmd.eOut||def.out[0];
+    const pf=p0.clone().addScaledVector(d,L), dr=perp(d);
+    const rO=rM(dnOut);
+    let cor=corMat;
+    switch(t){
+      case 'REDUCAO': cil(g,p0,d,L,r,rO,cor); break;
+      case 'LUVA_LR':{const a=L*0.4;cil(g,p0,d,a,r*1.14,r*1.14,cor);cil(g,p0.clone().addScaledVector(d,a),d,L-2*a,r*1.14,rO*1.14,cor);cil(g,pf.clone().addScaledVector(d,-a),d,a,rO*1.14,rO*1.14,cor);break}
+      case 'LUVA': cil(g,p0,d,L,r*1.14,r*1.14,cor); break;
+      case 'JM': cil(g,p0,d,L,r*1.1,r*1.1,cor); break;
+      case 'JD':{cil(g,p0,d,L,r,r,cor);cil(g,p0.clone().addScaledVector(d,L*.25),d,L*.5,r*1.12,r*1.12,0x7a8796);break}
+      case 'TE':{
+        e.eBr=cmd.eBr||'BOLSA';
+        const Lbr=(200+0.6*dn)*K, tt=alvo(d,cmd.dir||'Cima'), rb=rM(cmd.dn2);
+        cil(g,p0,d,L,r,r,cor);
+        const c=p0.clone().addScaledVector(d,L/2);
+        cil(g,c,tt,Lbr,rb,rb,cor);
+        const pb=c.clone().addScaledVector(tt,Lbr);
+        ext(g,pb,tt.clone().negate(),e.eBr,cmd.dn2,cor);
+        e.pBr={p:pb,d:tt,dn:cmd.dn2,end:e.eBr};
+        break}
+      case 'REG_GAVETA':{cor=COR_REG;cil(g,p0,d,L,r*1.05,r*1.05,cor);
+        const c=p0.clone().addScaledVector(d,L/2);
+        cil(g,c,dr,r*1.6,r*.55,r*.55,cor);cil(g,c.clone().addScaledVector(dr,r*1.6),dr,r*.7,r*.15,r*.15,0x333333);
+        const cross=new THREE.Vector3().crossVectors(d,dr).normalize();
+        cil(g,c.clone().addScaledVector(dr,r*2.3).addScaledVector(cross,-r*.45),cross,r*.9,r*.07,r*.07,0x333333);break}
+      case 'BORBOLETA':{cor=0x1d4e89;cil(g,p0,d,L,r*1.18,r*1.18,cor);
+        const c=p0.clone().addScaledVector(d,L/2);
+        cil(g,c,dr,r*1.5,r*.3,r*.3,cor);
+        cil(g,c.clone().addScaledVector(dr,r*1.5),new THREE.Vector3().crossVectors(d,dr).normalize(),r*1.1,r*.12,r*.12,0x333333);break}
+      case 'RETENCAO':{cor=COR_RET;cil(g,p0,d,L,r*1.1,r*1.1,cor);
+        const c=p0.clone().addScaledVector(d,L/2);cil(g,c,dr,r*1.3,r*.9,r*.9,cor);esfera(g,c.clone().addScaledVector(dr,r*1.3),r*.9,cor);break}
+      case 'VRP':{cor=COR_VRP;cil(g,p0,d,L,r*1.08,r*1.08,cor);
+        const c=p0.clone().addScaledVector(d,L*.5);cil(g,c,dr,r*1.2,r*1.4,r*1.4,cor);esfera(g,c.clone().addScaledVector(dr,r*1.2),r*1.4,cor);
+        cil(g,c.clone().addScaledVector(d,L*.3),dr,r*.9,r*.25,r*.25,0x333333);break}
+      case 'VENTOSA':{cor=COR_VENT;cil(g,p0,d,L*.55,r*.9,r*.9,cor);esfera(g,p0.clone().addScaledVector(d,L*.55),r*.9,cor);cil(g,p0.clone().addScaledVector(d,L*.55),d,L*.45,r*.3,r*.3,cor);break}
+      case 'CAP': cil(g,p0,d,L,r*1.14,r*1.14,cor); break;
+      case 'FLANGE_ANEL': break;
+      default: cil(g,p0,d,L,r,r,cor); // RETA, CARRETEL, PONTA_FLANGE, BOLSA_FLANGE
+    }
+    ext(g,p0,d,e.eIn,dn,cor);
+    if(hasOut){ ext(g,pf,d.clone().negate(),e.eOut,dnOut,cor); e.pOut={p:pf,d:d.clone(),dn:dnOut,end:e.eOut}; }
+    if(t==='CAP'&&e.eIn==='FLANGE') cil(g,p0,d,Cat.flT(dn)*K,Cat.flOD(dn)/2*K,Cat.flOD(dn)/2*K,COR_FL);
+  }
+  e.pIn.end=e.eIn; e.grupo=g;
+  return e;
+}
+
+// a = extremidade da origem, b = entrada do novo elemento
+function compat(a,b){
+  if(a==='FLANGE'&&b==='FLANGE') return 'FLANGE';
+  if((a==='PONTA'&&b==='BOLSA')||(a==='BOLSA'&&b==='PONTA')) return 'ELASTICA';
+  if((a==='PONTA'&&b==='JM')||(a==='JM'&&b==='PONTA')) return 'JM';
+  return null;
+}
+
+function status(msg,kind){const s=$('status');s.textContent=msg;s.className=kind||''}
+
+function adicionar(cmd,silencioso){
+  let src; try{src=resolve(cmd)}catch(err){status(err.message,'warn');return null}
+  if(cmd.id==null) cmd.id=nextId;
+  nextId=Math.max(nextId,cmd.id)+1;
+  const e=construir(cmd,src);
+  rede.push(e); raiz.add(e.grupo);
+  if(!silencioso){
+    if(src.el&&!compat(src.end,e.eIn)) status(`Ligação incompatível: ${END_NOME[src.end]} → ${END_NOME[e.eIn]} (${nomeEl(e)}).`,'warn');
+    else status(`${nomeEl(e)} adicionado${e.dn2?` (DN${e.dn} × DN${e.dn2})`:` (DN${e.dn})`}.`,'ok');
+    atualizaFontes(e.pOut?`${e.id}:Out`:(e.pBr?`${e.id}:Br`:'novo'));
+    enquadrar(rede.length===1?VISTAS.iso:camera.position.clone().sub(controls.target));
+  }
+  return e;
+}
+function desfazer(){
+  const e=rede.pop(); if(!e) return;
+  raiz.remove(e.grupo); e.grupo.traverse(o=>{if(o.geometry)o.geometry.dispose()});
+  nextId=e.id;
+  atualizaFontes(e.from?`${e.from.id}:${e.from.port}`:'novo'); status('Último elemento removido.');
+}
+function limpar(){while(rede.length)desfazer();nextId=1;atualizaFontes('novo')}
+
+/* ---------- UI: fonte e formularios ---------- */
+function usado(id,port){return rede.some(e=>e.from&&e.from.id===id&&e.from.port===port)}
+function atualizaFontes(sel){
+  const s=$('fonte'); s.innerHTML='<option value="novo">Novo ponto inicial</option>';
+  for(const e of rede){
+    if(e.pOut&&!usado(e.id,'Out')) s.add(new Option(`#${e.id} ${nomeEl(e)} — saída (DN${e.pOut.dn})`,`${e.id}:Out`));
+    if(e.pBr&&!usado(e.id,'Br')) s.add(new Option(`#${e.id} ${nomeEl(e)} — derivação (DN${e.pBr.dn})`,`${e.id}:Br`));
+  }
+  s.value=[...s.options].some(o=>o.value===sel)?sel:'novo';
+  $('novo').classList.toggle('hide',s.value!=='novo');
+  if(typeof atualizaTipo==='function') atualizaTipo();
+}
+function montaFonte(){
+  const v=$('fonte').value;
+  if(v==='novo') return {start:{p:[+$('x0').value,+$('y0').value,+$('z0').value],d:$('d0').value.split(',').map(Number),dn:+$('dn').value,mat:$('mat').value}};
+  const [id,port]=v.split(':'); return {id:+id,port};
+}
+function dnAtual(){const v=$('fonte').value;if(v==='novo')return +$('dn').value;const [id,port]=v.split(':');const e=byId(+id);return (port==='Br'?e.pBr:e.pOut).dn}
+
+for(const dn of DNs){$('dn').add(new Option('DN'+dn,dn));$('dn2').add(new Option('DN'+dn,dn))}
+$('dn').value=100; $('dn2').value=50;
+for(const [k,p] of Object.entries(PECAS)) $('tipo').add(new Option(p.nome,k));
+function preencheEnds(sel,opts,def){sel.innerHTML='';for(const o of opts)sel.add(new Option(END_NOME[o],o));sel.value=def&&opts.includes(def)?def:opts[0];sel.disabled=opts.length===1}
+function atualizaTipo(){
+  const k=$('tipo').value, t=PECAS[k], dn=dnAtual();
+  const show=(id,on)=>$(id).classList.toggle('hide',!on);
+  show('fAng',!!t.ang); show('fDir',!!t.dir); show('fAngDir',!!(t.ang||t.dir));
+  show('fDn2',!!t.dn2); show('fLen',!!t.len);
+  $('lDir').textContent=k==='TE'?'Direção da derivação':'Direção';
+  $('lDn2').textContent=k==='TE'?'DN da derivação':'DN de saída';
+  show('fIn',!!t.in); show('fOut',!!t.out); show('fBr',!!t.br);
+  const def=t.def||[];
+  if(t.in) preencheEnds($('eIn'),t.in,def[0]);
+  if(t.out) preencheEnds($('eOut'),t.out,def[1]);
+  if(t.br) preencheEnds($('eBr'),t.br,def[2]);
+  if(t.len) $('len').value=Math.round(t.L(dn));
+  if(t.dn2&&+$('dn2').value===dn&&k!=='TE'){const i=ix(dn);$('dn2').value=DNs[i>0?i-1:1]}
+}
+$('tipo').onchange=atualizaTipo; $('dn').onchange=atualizaTipo;
+$('fonte').onchange=()=>{$('novo').classList.toggle('hide',$('fonte').value!=='novo');atualizaTipo()};
+$('eIn').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync&&t.out)$('eOut').value=$('eIn').value};
+$('eOut').onchange=()=>{const t=PECAS[$('tipo').value];if(t.sync)$('eIn').value=$('eOut').value};
+
+$('addTubo').onclick=()=>{
+  const L=+$('ltubo').value; if(!(L>0)){status('Informe um comprimento válido.','warn');return}
+  adicionar({tipo:'TUBO',fonte:montaFonte(),len:L});
+};
+$('addPeca').onclick=()=>{
+  const k=$('tipo').value,t=PECAS[k];
+  if(t.dn2&&k!=='TE'&&+$('dn2').value===dnAtual()){status('O DN de saída deve ser diferente do DN de entrada.','warn');return}
+  const cmd={tipo:k,fonte:montaFonte()};
+  if(t.ang) cmd.ang=+$('ang').value;
+  if(t.dir) cmd.dir=$('dir').value;
+  if(t.dn2) cmd.dn2=+$('dn2').value;
+  if(t.len) cmd.len=+$('len').value;
+  if(t.in) cmd.eIn=$('eIn').value;
+  if(t.out) cmd.eOut=$('eOut').value;
+  if(t.br) cmd.eBr=$('eBr').value;
+  adicionar(cmd);
+};
+$('undo').onclick=desfazer;
+$('clear').onclick=()=>{if(!rede.length||confirm('Apagar toda a rede?'))limpar()};
+
+/* ---------- Vistas ---------- */
+const VISTAS={iso:new THREE.Vector3(-1,-1,.8),planta:new THREE.Vector3(0,-.0005,1),frente:new THREE.Vector3(0,-1,0)};
+let ultimaVista=VISTAS.iso;
+function enquadrar(dir){
+  const box=new THREE.Box3().setFromObject(raiz);
+  let c=new THREE.Vector3(0,0,0),rad=3;
+  if(!box.isEmpty()){c=box.getCenter(new THREE.Vector3());rad=Math.max(box.getBoundingSphere(new THREE.Sphere()).radius,0.5)}
+  const dist=rad/Math.sin(THREE.MathUtils.degToRad(camera.fov/2))*1.05;
+  camera.position.copy(c).addScaledVector(dir.clone().normalize(),dist);
+  controls.target.copy(c); camera.near=Math.max(dist/1000,0.01); camera.far=dist*50; camera.updateProjectionMatrix(); controls.update();
+}
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const k=b.dataset.v;if(k!=='fit')ultimaVista=VISTAS[k];enquadrar(k==='fit'?ultimaVista:VISTAS[k])});
+
+/* ---------- Quantitativo ---------- */
+function quantitativo(){
+  const tubos={},pecas={},verif=[],fl={},el={},jm={};
+  const get=(o,k,fn)=>o[k]||(o[k]=fn());
+  for(const e of rede){
+    if(e.tipo==='TUBO') get(tubos,`${e.mat}|${e.dn}`,()=>({mat:e.mat,dn:e.dn,m:0})).m+=e.lenM;
+    else{
+      const def=PECAS[e.tipo];
+      const ends=[e.eIn,def.out?e.eOut:null,e.eBr].filter(Boolean).map(x=>END_NOME[x]).join(' / ');
+      const dn=e.dn2?`DN${e.dn}×DN${e.dn2}`:`DN${e.dn}`;
+      const nome=nomeEl(e)+(e.ang?` ${e.ang}°`:'');
+      get(pecas,`${e.tipo}|${dn}|${e.ang}|${ends}`,()=>({nome,dn,ends,q:0})).q++;
+    }
+    if(e.from){
+      const o=byId(e.from.id), port=e.from.port==='Br'?o.pBr:o.pOut, kind=compat(port.end,e.eIn);
+      if(!kind) verif.push(`Ligação incompatível: ${END_NOME[port.end]} → ${END_NOME[e.eIn]} entre #${o.id} ${nomeEl(o)} e #${e.id} ${nomeEl(e)}.`);
+      else get(kind==='FLANGE'?fl:kind==='ELASTICA'?el:jm,`${e.dn}`,()=>({dn:e.dn,q:0})).q++;
+    }
+  }
+  for(const e of rede){
+    if(e.pOut&&e.pOut.end==='FLANGE'&&!usado(e.id,'Out')) verif.push(`Flange sem par: saída de #${e.id} ${nomeEl(e)} (DN${e.pOut.dn}).`);
+    if(e.pBr&&e.pBr.end==='FLANGE'&&!usado(e.id,'Br')) verif.push(`Flange sem par: derivação de #${e.id} ${nomeEl(e)} (DN${e.pBr.dn}).`);
+    if(!e.from&&e.eIn==='FLANGE') verif.push(`Flange sem par: entrada de #${e.id} ${nomeEl(e)} (DN${e.dn}).`);
+  }
+  const lin=[];
+  for(const x of Object.values(tubos).sort((a,b)=>a.dn-b.dn)) lin.push(['Tubos',`Tubo ${x.mat} DN${x.dn}`,'m',x.m.toFixed(2).replace('.',',')]);
+  for(const x of Object.values(pecas)) lin.push(['Peças',`${x.nome} ${x.dn} (${x.ends})`,'un',x.q]);
+  for(const x of Object.values(fl)){
+    const n=Cat.parN(x.dn),m=Cat.parM(x.dn),L=Cat.parLen(x.dn);
+    lin.push(['Juntas flangeadas',`Parafuso M${m} x ${L} (DN${x.dn})`,'un',n*x.q]);
+    lin.push(['Juntas flangeadas',`Porca M${m} (DN${x.dn})`,'un',n*x.q]);
+    lin.push(['Juntas flangeadas',`Arruela M${m} (DN${x.dn})`,'un',2*n*x.q]);
+    lin.push(['Juntas flangeadas',`Junta de vedação DN${x.dn}`,'un',x.q]);
+  }
+  for(const x of Object.values(jm)){
+    const n=Cat.jmN(x.dn),m=Cat.jmM(x.dn),L=Cat.jmParLen(x.dn);
+    lin.push(['Juntas mecânicas',`Anel de borracha DN${x.dn}`,'un',x.q]);
+    lin.push(['Juntas mecânicas',`Contraflange DN${x.dn}`,'un',x.q]);
+    lin.push(['Juntas mecânicas',`Parafuso T M${m} x ${L} (DN${x.dn})`,'un',n*x.q]);
+    lin.push(['Juntas mecânicas',`Porca M${m} (DN${x.dn})`,'un',n*x.q]);
+  }
+  for(const x of Object.values(el)) lin.push(['Juntas elásticas',`Anel de borracha DN${x.dn}`,'un',x.q]);
+  return {lin,verif};
+}
+let ultimoCsv='';
+$('quant').onclick=()=>{
+  if(!rede.length){status('A rede está vazia.','warn');return}
+  const {lin,verif}=quantitativo();
+  let h='<h2 style="margin:0 0 4px;font-size:17px">Quantitativo</h2>';
+  for(const c of [...new Set(lin.map(l=>l[0]))]){
+    h+=`<h3>${c}</h3><table><tr><th>Descrição</th><th>Un.</th><th class="n">Qtd.</th></tr>`;
+    for(const l of lin.filter(x=>x[0]===c)) h+=`<tr><td>${l[1]}</td><td>${l[2]}</td><td class="n">${l[3]}</td></tr>`;
+    h+='</table>';
+  }
+  if(verif.length) h+='<h3>Verificar</h3><ul>'+verif.map(v=>`<li class="warnli">${v}</li>`).join('')+'</ul>';
+  $('dlgBody').innerHTML=h;
+  ultimoCsv='﻿Categoria;Descrição;Unidade;Quantidade\r\n'+lin.map(l=>l.join(';')).join('\r\n')
+    +(verif.length?'\r\n'+verif.map(v=>'Verificar;'+v+';;').join('\r\n'):'');
+  $('dlg').showModal();
+};
+$('fechar').onclick=()=>$('dlg').close();
+$('csv').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ultimoCsv],{type:'text/csv;charset=utf-8'}));a.download='Quantitativo_RedesAgua.csv';a.click()};
+
+/* ---------- Salvar / abrir ---------- */
+$('save').onclick=()=>{
+  const dados=JSON.stringify({app:'RedesAgua-Web',versao:1,cmds:rede.map(e=>e.cmd)});
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([dados],{type:'application/json'}));a.download='rede-agua.json';a.click();
+};
+$('load').onclick=()=>$('file').click();
+$('file').onchange=async ev=>{
+  const f=ev.target.files[0]; if(!f) return;
+  try{
+    const j=JSON.parse(await f.text()); if(j.app!=='RedesAgua-Web') throw new Error('arquivo inválido');
+    limpar(); for(const c of j.cmds) if(!adicionar(c,true)) throw new Error('falha ao reconstruir a rede');
+    const u=rede[rede.length-1];
+    atualizaFontes(u&&u.pOut?`${u.id}:Out`:'novo'); enquadrar(VISTAS.iso); status('Projeto aberto.','ok');
+  }catch(err){status('Não foi possível abrir: '+err.message,'warn')}
+  ev.target.value='';
+};
+
+/* ---------- Impressao por janela ---------- */
+const PAPEL={A4:[297,210],A3:[420,297]}; // paisagem (mm)
+$('print').onclick=()=>{
+  if(!rede.length){status('A rede está vazia.','warn');return}
+  const ov=document.createElement('div'); ov.id='sel';
+  ov.innerHTML='<div id="selhint">Arraste a janela a imprimir (Esc cancela)</div><div id="selrect" class="hide"></div>';
+  $('main').appendChild(ov);
+  const rect=ov.querySelector('#selrect'); let a=null;
+  const esc=e=>{if(e.key==='Escape')fim()};
+  const fim=()=>{ov.remove();removeEventListener('keydown',esc)};
+  addEventListener('keydown',esc);
+  const pos=e=>{const b=ov.getBoundingClientRect();return [Math.min(Math.max(e.clientX-b.left,0),b.width),Math.min(Math.max(e.clientY-b.top,0),b.height)]};
+  ov.onpointerdown=e=>{a=pos(e);ov.setPointerCapture(e.pointerId);rect.classList.remove('hide')};
+  ov.onpointermove=e=>{if(!a)return;const b=pos(e);
+    Object.assign(rect.style,{left:Math.min(a[0],b[0])+'px',top:Math.min(a[1],b[1])+'px',width:Math.abs(a[0]-b[0])+'px',height:Math.abs(a[1]-b[1])+'px'})};
+  ov.onpointerup=e=>{
+    if(!a)return; const b=pos(e); const x=Math.min(a[0],b[0]),y=Math.min(a[1],b[1]),w=Math.abs(a[0]-b[0]),h=Math.abs(a[1]-b[1]);
+    fim(); if(w<8||h<8){status('Janela muito pequena; impressão cancelada.','warn');return}
+    imprimir(x,y,w,h);
+  };
+};
+function imprimir(x,y,w,h){
+  const paisagem=w>=h, papel=$('papel').value, [pl,ps]=PAPEL[papel];
+  const pw=paisagem?pl:ps, ph=paisagem?ps:pl; // folha em mm na orientacao escolhida
+  const M=10, legenda=8, areaW=pw-2*M, areaH=ph-2*M-legenda;
+  // pixels de saida (200 dpi) com a mesma proporcao da janela, ajustados a area util da folha
+  const pxMm=200/25.4, esc=Math.min(areaW*pxMm/w,areaH*pxMm/h);
+  const W=Math.round(w*esc), H=Math.round(h*esc);
+  const fw=view.clientWidth, fh=view.clientHeight;
+  const bgAnt=scene.background; scene.background=new THREE.Color(0xffffff); grid.visible=false;
+  renderer.setPixelRatio(1); renderer.setSize(W,H,false);
+  camera.setViewOffset(fw,fh,x,y,w,h); camera.updateProjectionMatrix();
+  renderer.render(scene,camera);
+  const url=renderer.domElement.toDataURL('image/png');
+  camera.clearViewOffset(); scene.background=bgAnt; grid.visible=true;
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2)); ajusta();
+  const hoje=new Date().toLocaleDateString('pt-BR');
+  const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><title>RedesAgua</title><style>
+    @page{size:${papel} ${paisagem?'landscape':'portrait'};margin:${M}mm}
+    html,body{margin:0;padding:0;font:11px system-ui,sans-serif;color:#222}
+    .box{width:${areaW}mm;height:${areaH}mm;display:flex;align-items:center;justify-content:center;border:.3mm solid #999;box-sizing:border-box}
+    img{max-width:100%;max-height:100%;object-fit:contain}
+    .cap{height:${legenda}mm;display:flex;align-items:flex-end;justify-content:space-between}
+  </style></head><body><div class="box"><img id="i" src="${url}"></div>
+  <div class="cap"><span>RedesAgua — rede de água</span><span>${papel} ${paisagem?'paisagem':'retrato'} — ${hoje}</span></div></body></html>`;
+  f.onload=()=>{const im=f.contentDocument.getElementById('i');const go=()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),2000)};im.complete?go():im.onload=go};
+  document.body.appendChild(f);
+  status(`Imprimindo janela em ${papel} ${paisagem?'paisagem':'retrato'}, ajustada à folha.`,'ok');
+}
+
+/* ---------- Inicio ---------- */
+atualizaFontes('novo'); enquadrar(VISTAS.iso);
+window.__rede={rede,adicionar,quantitativo}; // depuracao
+</script>
+</body>
+</html>

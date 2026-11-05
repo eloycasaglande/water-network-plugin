@@ -94,6 +94,14 @@ carregado na inicialização do ZWCAD (por exemplo `acaddoc.lsp` na pasta de sup
 (command "_.NETLOAD" "C:/caminho/para/plugin encanamentos/dist/v36/RedesAgua.dll")
 ```
 
+## Versão web (Chrome)
+
+Pasta `web\` — um único `index.html`, sem instalação, que roda em qualquer navegador moderno:
+redes em 3D (tubos, curvas, tês, registros, reduções, ventosas etc.), quantitativo com CSV, salvar/abrir
+projeto (JSON) e **impressão por janela** com retrato/paisagem automático e ajuste à folha (A4/A3).
+Usa o mesmo catálogo provisório do plugin. Publicada em
+https://eloycasaglande.github.io/water-network-plugin/web/ (GitHub Pages). O plugin do ZWCAD/AutoCAD continua como está.
+
 ## Comandos
 
 | Comando | O que faz |
