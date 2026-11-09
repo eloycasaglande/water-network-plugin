@@ -25,6 +25,10 @@ button.tog.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)
 #tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px}
 #selrect{position:absolute;border:2px dashed var(--acc);background:rgba(31,111,178,.15);pointer-events:none}
 .hide{display:none!important}
+.dd{position:relative}
+.ddm{position:absolute;top:100%;left:0;margin-top:4px;z-index:30;display:flex;flex-direction:column;gap:2px;min-width:170px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.ddm button{text-align:left;border:0;background:transparent}
+.ddm button:hover{background:var(--bg);filter:none}
 #cmd{background:var(--panel);border-top:2px solid var(--cmd);padding:6px 10px 8px;font:13px ui-monospace,Consolas,monospace}
 #hist{height:84px;overflow:auto;color:var(--mut)}
 #hist .warn{color:var(--warn)}#hist .ok{color:var(--ok)}#hist .cmd{color:var(--cmd);font-weight:700}#hist .eco{opacity:.85}
@@ -81,16 +85,19 @@ h3{margin:10px 0 0;font-size:14px}
   <button class="pri" data-cmd="REDE">Rede</button>
   <button data-cmd="CONTINUAR">Continuar</button>
   <button data-cmd="QUANT">Quantitativo</button>
-  <button data-cmd="IMPRIMIR">Imprimir</button>
-  <button data-cmd="IMPRIMIRPB" title="Tons de cinza bem separados e contorno, para impressora preto e branco">Imprimir P&amp;B</button>
+  <div class="dd" id="ddImp">
+    <button id="btImp" aria-haspopup="true" aria-expanded="false">Imprimir ▾</button>
+    <div class="ddm hide" id="mnImp">
+      <button data-cmd="IMPRIMIR">Impressão colorida</button>
+      <button data-cmd="IMPRIMIRPB" title="Tons de cinza bem separados e contorno, para impressora preto e branco">Impressão P&amp;B</button>
+    </div>
+  </div>
   <span class="sep"></span>
   <button data-cmd="DESFAZER">Desfazer</button>
   <button data-cmd="APAGAR" title="Apaga o que está selecionado (tecla Delete)">Apagar</button>
   <button data-cmd="LIMPAR">Limpar</button>
-  <button data-cmd="SALVAR" title="Salva neste navegador">Salvar</button>
-  <button data-cmd="ABRIR" title="Abre o que foi salvo neste navegador">Abrir</button>
-  <button data-cmd="EXPORTAR" title="Baixa um arquivo .json">Exportar</button>
-  <button data-cmd="IMPORTAR" title="Abre um arquivo .json">Importar</button>
+  <button class="pri" data-cmd="SALVAR" title="Salva o projeto num arquivo no seu computador">Salvar</button>
+  <button data-cmd="ABRIR" title="Abre um projeto salvo no seu computador">Abrir</button>
   <span class="sep"></span>
   <button data-cmd="VISTA">Iso</button>
   <button data-cmd="PLANTA">Planta</button>
@@ -134,7 +141,7 @@ h3{margin:10px 0 0;font-size:14px}
   <div class="passo"><div class="n">8</div><div class="t">Errou? Clique em <b>Desfazer</b>. Terminou? Aperte <span class="tecla">Enter</span> sem escrever nada.<small>O <span class="tecla">Esc</span> cancela o que você estava fazendo.</small></div></div>
   <div class="passo"><div class="n">9</div><div class="t">Para olhar de outro jeito: segure o <b>botão direito</b> do mouse e arraste para girar. Gire a <b>rodinha</b> para chegar perto ou longe.<small>Os botões <b>Iso</b>, <b>Planta</b> e <b>Frente</b> mudam de lado de uma vez. <b>Zoom ext.</b> mostra tudo.</small></div></div>
   <div class="passo"><div class="n">10</div><div class="t">Quer saber o que é uma peça? Passe o mouse em cima dela e espere.<small>Aparece uma caixinha com o nome e o tamanho.</small></div></div>
-  <div class="passo"><div class="n">11</div><div class="t">Para guardar seu trabalho, clique em <b>Salvar</b>. Para pôr no papel, clique em <b>Imprimir</b>.<small>Impressora só preto e branco? Use <b>Imprimir P&amp;B</b>. Para a lista de materiais, use <b>Quantitativo</b>.</small></div></div>
+  <div class="passo"><div class="n">11</div><div class="t">Para guardar seu trabalho, clique em <b>Salvar</b> (gera um arquivo no seu computador; para continuar depois, clique em <b>Abrir</b>). Para pôr no papel, clique em <b>Imprimir</b> e escolha a opção.<small>Impressora só preto e branco? Escolha <b>Impressão P&amp;B</b>. Para a lista de materiais, use <b>Quantitativo</b>.</small></div></div>
 
   <h3 style="margin-top:14px">Treino de 1 minuto</h3>
   <div class="treino">Aperte <b>Rede</b> → <span class="tecla">Enter</span> → <span class="tecla">Enter</span> → digite <b>0,0,0</b> <span class="tecla">Enter</span> → digite <b>500</b> <span class="tecla">Enter</span> → <span class="tecla">Enter</span>.<br>Você acabou de desenhar um cano de 5 metros!</div>
@@ -154,7 +161,7 @@ h3{margin:10px 0 0;font-size:14px}
     <tr><td><b>DESFAZER</b> (ou <b>U</b>)</td><td>Remove o último elemento criado.</td></tr>
     <tr><td><b>SELEÇÃO</b> / <b>APAGAR</b></td><td>Com nenhum comando em andamento, clique num tubo ou peça para selecioná-lo (fica laranja) ou segure o botão esquerdo e arraste um retângulo: da esquerda para a direita pega só o que ficar inteiro dentro; da direita para a esquerda pega tudo que encostar. Shift/Ctrl soma à seleção. <b>Delete</b> (ou o botão Apagar) apaga o selecionado e o que estiver ligado depois dele; Esc limpa a seleção.</td></tr>
     <tr><td><b>LIMPAR</b></td><td>Apaga toda a rede (pede confirmação).</td></tr>
-    <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td>Salva a rede neste navegador (fica guardada mesmo fechando a página) e abre de novo o que foi salvo. A rede também é guardada automaticamente a cada alteração e volta quando você reabre a página.</td></tr>
+    <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td><b>Salvar</b> grava o projeto num arquivo .json no seu computador (o navegador pode perguntar onde guardar) e <b>Abrir</b> carrega um arquivo salvo antes. A rede também é guardada automaticamente neste navegador a cada alteração e volta quando você reabre a página.</td></tr>
     <tr><td><b>EXPORTAR</b> / <b>IMPORTAR</b></td><td>Baixa a rede em um arquivo .json (para guardar ou enviar) e abre um arquivo .json.</td></tr>
     <tr><td><b>VISTA</b>, <b>PLANTA</b>, <b>FRENTE</b>, <b>ZOOM</b></td><td>Vista isométrica, vista de cima, vista de frente e enquadrar tudo.</td></tr>
   </table>
@@ -1248,7 +1255,7 @@ function cmdLimpar(){if(!rede.length||confirm('Apagar toda a rede?')){limpar();m
 const COMANDOS={
   REDE:cmdRede, CONTINUAR:cmdContinuar, QUANT:cmdQuant, IMPRIMIR:cmdImprimir, IMPRIMIRPB:cmdImprimirPB,
   VISTA:()=>vista('iso'), PLANTA:()=>vista('planta'), FRENTE:()=>vista('frente'), ZOOM:()=>vista('fit'),
-  DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, APAGAR:apagarSel, SALVAR:salvarLocal, ABRIR:abrirLocal, EXPORTAR:exportarArquivo, IMPORTAR:()=>$('file').click()
+  DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, APAGAR:apagarSel, SALVAR:salvarArquivo, ABRIR:()=>$('file').click(), SALVARNAV:salvarLocal, ABRIRNAV:abrirLocal, EXPORTAR:salvarArquivo, IMPORTAR:()=>$('file').click()
 };
 async function executar(nome){
   if(ocupado){msg('Termine ou cancele (Esc) o comando atual.','warn');return}
@@ -1265,8 +1272,11 @@ function executarTexto(txt){
 }
 // Com um comando em andamento (ex.: dentro da REDE), estes botoes continuam funcionando sem atrapalhar.
 const SEGUROS=['QUANT','IMPRIMIR','IMPRIMIRPB','SALVAR','EXPORTAR','VISTA','PLANTA','FRENTE','ZOOM'];
+const mnImp=$('mnImp');
+$('btImp').onclick=ev=>{ev.stopPropagation();const a=mnImp.classList.toggle('hide');$('btImp').setAttribute('aria-expanded',String(!a))};
+addEventListener('click',()=>mnImp.classList.add('hide'));
 document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>{
-  const c=b.dataset.cmd;
+  const c=b.dataset.cmd; mnImp.classList.add('hide');
   if(ocupado){
     if(SEGUROS.includes(c)){try{COMANDOS[c]()}catch(err){msg('Erro: '+err.message,'warn')}return}
     if(c==='DESFAZER'&&pend&&(pend.o.kw||[]).includes('Desfazer')){resolveTexto('Desfazer');return}
@@ -1538,6 +1548,20 @@ function abrirLocal(){
   if(rede.length&&!confirm('Substituir a rede atual pelo projeto salvo neste navegador?')) return;
   try{const j=carregarProjeto(t);msg(`Projeto aberto (salvo em ${new Date(j.salvo).toLocaleString('pt-BR')}).`,'ok')}catch(err){msg('Não foi possível abrir: '+err.message,'warn')}
 }
+async function salvarArquivo(){
+  const texto=projetoJson(), d=new Date(), p2=n=>String(n).padStart(2,'0');
+  const nome=`rede-agua-${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.json`;
+  try{localStorage.setItem(CHAVE,texto)}catch(err){}
+  if(window.showSaveFilePicker){
+    try{
+      const h=await showSaveFilePicker({suggestedName:nome,types:[{description:'Projeto RedesAgua',accept:{'application/json':['.json']}}]});
+      const w=await h.createWritable(); await w.write(texto); await w.close();
+      msg(`Projeto salvo em ${h.name} (${rede.length} elemento(s)).`,'ok'); return;
+    }catch(err){if(err&&err.name==='AbortError'){msg('Salvar cancelado.','eco');return}}
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([texto],{type:'application/json'}));a.download=nome;a.click();
+  msg(`Projeto salvo no arquivo ${nome} (pasta Downloads, se o navegador não perguntou onde).`,'ok');
+}
 function exportarArquivo(){
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([projetoJson()],{type:'application/json'}));a.download='rede-agua.json';a.click();
   msg('Arquivo rede-agua.json gerado.','ok');
@@ -1546,7 +1570,7 @@ let tAuto=null;
 function aoMudar(){clearTimeout(tAuto);tAuto=setTimeout(()=>{try{localStorage.setItem(CHAVE_AUTO,projetoJson())}catch(err){}},400)}
 $('file').onchange=async ev=>{
   const f=ev.target.files[0]; if(!f) return;
-  try{carregarProjeto(await f.text());msg('Arquivo importado.','ok')}catch(err){msg('Não foi possível importar: '+err.message,'warn')}
+  try{carregarProjeto(await f.text());msg(`Projeto aberto: ${f.name} (${rede.length} elemento(s)).`,'ok')}catch(err){msg('Não foi possível importar: '+err.message,'warn')}
   ev.target.value='';
 };
 $('fechar').onclick=()=>$('dlg').close();
