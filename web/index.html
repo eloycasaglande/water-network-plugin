@@ -155,7 +155,7 @@ h3{margin:10px 0 0;font-size:14px}
   <table>
     <tr><td><b>REDE</b></td><td>Desenha uma rede nova: pede material, DN e ponto inicial, e depois pede o próximo ponto ou distância. Opções: <i>Reta</i> (segue em frente, pede só o comprimento), <i>Curva</i> (ângulo, direção e comprimento seguinte), <i>Peça</i> (abre a janela de peças), <i>Desfazer</i> (remove o último elemento) e <i>Fim</i>.</td></tr>
     <tr><td><b>CONTINUAR</b></td><td>Retoma uma rede existente: clique num tubo ou peça e escolha continuar pela <i>Entrada</i>, <i>Saída</i> ou <i>Derivação</i> (tê).</td></tr>
-    <tr><td><b>QUANT</b></td><td>Mostra o quantitativo (tubos em metros, peças, parafusos, porcas, arruelas, juntas e avisos de ligação incompatível) e permite baixar em CSV.</td></tr>
+    <tr><td><b>QUANT</b></td><td>Mostra o quantitativo (tubos em metros, peças, parafusos, porcas, arruelas, anel de vedação ABf, juntas e avisos de ligação incompatível). Nas juntas flangeadas o kit (quantidade, rosca e comprimento do parafuso) segue a tabela NBR 7675 por DN e pela classe PN10 ou PN16 escolhida na janela e permite baixar em CSV.</td></tr>
     <tr><td><b>IMPRIMIR</b></td><td>Imprime o que está na tela, do jeito que está (mesma vista e zoom), sem a grade, pela janela de impressão do computador. Retrato ou paisagem é escolhido pela proporção da tela e a imagem é ajustada à folha. Enquadre a vista antes (Zoom ext., Iso, Planta...).</td></tr>
     <tr><td><b>IMPRIMIRPB</b></td><td>Igual ao IMPRIMIR, mas para impressora preto e branco: cada tipo de peça sai num tom de cinza bem diferente (tubo cinza médio, peças claras, registro bem escuro, ventosa quase branca...) e com contorno preto, para distinguir bem no papel A4.</td></tr>
     <tr><td><b>DESFAZER</b> (ou <b>U</b>)</td><td>Remove o último elemento criado.</td></tr>
@@ -242,6 +242,14 @@ const T={
   JmN:[4,4,4,4,6,6,6,8,8,10,12,12,14,16,18],
   JmM:[16,16,16,16,16,20,20,20,20,20,20,24,24,24,24]};
 const PARAF=[40,45,50,55,60,65,70,75,80,90,100,110,120,130,140,150,160,180,200];
+// Kit de parafusos por junta flangeada (NBR 7675 / ISO 2531): [quantidade, rosca M, comprimento mm]
+// Fonte: catalogo tecnico Carvalho Saneamento (tabela 'Acessorios para juntas com flanges - parafusos').
+// DN 65 e 125 nao constam nessa tabela: usam o mesmo kit do DN vizinho (EN 1092-2: 4xM16 e 8xM16).
+const KIT={
+  PN10:{50:[4,16,80],65:[4,16,80],80:[8,16,80],100:[8,16,80],125:[8,16,80],150:[8,20,90],200:[8,20,90],250:[12,20,90],300:[12,20,100],350:[16,20,100],400:[16,24,110],450:[20,24,110],500:[20,24,110],600:[20,27,120],700:[24,27,130]},
+  PN16:{50:[4,16,80],65:[4,16,80],80:[8,16,80],100:[8,16,80],125:[8,16,80],150:[8,20,90],200:[12,20,90],250:[12,24,100],300:[12,24,100],350:[16,24,110],400:[16,27,120],450:[20,27,120],500:[20,30,130],600:[20,33,140],700:[24,33,160]}
+};
+const kitFlange=(dn,pn)=>KIT[pn][DNs[ix(dn)]];
 const ix=dn=>{let b=0;for(let i=1;i<DNs.length;i++)if(Math.abs(DNs[i]-dn)<Math.abs(DNs[b]-dn))b=i;return b};
 const Cat={
   de:dn=>T.De[ix(dn)], flOD:dn=>T.FlOD[ix(dn)], flPCD:dn=>T.FlPCD[ix(dn)], flT:dn=>T.FlT[ix(dn)],
@@ -1642,11 +1650,11 @@ function quantitativo(){
   for(const x of Object.values(pecas)) lin.push(['Peças',`${x.nome} ${x.dn} (${x.ends})`,'un',x.q]);
   for(const x of Object.values(jun)){
     if(x.kind==='FLANGE'){
-      const n=Cat.parN(x.dn),m=Cat.parM(x.dn),L=Cat.parLen(x.dn);
-      lin.push(['Juntas flangeadas',`Parafuso M${m} x ${L} (DN${x.dn})`,'un',n*x.q]);
-      lin.push(['Juntas flangeadas',`Porca M${m} (DN${x.dn})`,'un',n*x.q]);
-      lin.push(['Juntas flangeadas',`Arruela M${m} (DN${x.dn})`,'un',2*n*x.q]);
-      lin.push(['Juntas flangeadas',`Junta de vedação DN${x.dn}`,'un',x.q]);
+      const [n,m,L]=kitFlange(x.dn,pnQuant);
+      lin.push(['Juntas flangeadas',`Parafuso sextavado M${m} x ${L} mm (DN${x.dn} ${pnQuant})`,'un',n*x.q]);
+      lin.push(['Juntas flangeadas',`Porca sextavada M${m} (DN${x.dn} ${pnQuant})`,'un',n*x.q]);
+      lin.push(['Juntas flangeadas',`Arruela lisa M${m} (DN${x.dn} ${pnQuant})`,'un',2*n*x.q]);
+      lin.push(['Juntas flangeadas',`Anel de vedação ABf DN${x.dn} ${pnQuant}`,'un',x.q]);
     } else if(x.kind==='JM'){
       const n=Cat.jmN(x.dn),m=Cat.jmM(x.dn),L=Cat.jmParLen(x.dn);
       lin.push(['Juntas mecânicas',`Anel de borracha DN${x.dn}`,'un',x.q]);
@@ -1659,9 +1667,11 @@ function quantitativo(){
   return {lin,verif};
 }
 let ultimoCsv='';
+let pnQuant='PN10';
 function mostraQuant(){
   const {lin,verif}=quantitativo();
   let h='<h2 style="margin:0 0 4px;font-size:17px">Quantitativo</h2>';
+  h+=`<div style="margin:4px 0 8px;font-size:13px">Classe de pressão dos flanges: <select id="pnSel" style="width:auto;display:inline-block"><option${pnQuant==='PN10'?' selected':''}>PN10</option><option${pnQuant==='PN16'?' selected':''}>PN16</option></select> <span style="color:var(--mut)">(define parafusos, porcas, arruelas e anel ABf)</span></div>`;
   for(const c of [...new Set(lin.map(l=>l[0]))]){
     h+=`<h3>${c}</h3><table><tr><th>Descrição</th><th>Un.</th><th class="n">Qtd.</th></tr>`;
     for(const l of lin.filter(x=>x[0]===c)) h+=`<tr><td>${l[1]}</td><td>${l[2]}</td><td class="n">${l[3]}</td></tr>`;
@@ -1669,6 +1679,7 @@ function mostraQuant(){
   }
   if(verif.length) h+='<h3>Verificar</h3><ul>'+verif.map(v=>`<li class="warnli">${v}</li>`).join('')+'</ul>';
   $('dlgBody').innerHTML=h;
+  $('pnSel').onchange=ev=>{pnQuant=ev.target.value;mostraQuant()};
   ultimoCsv='﻿Categoria;Descrição;Unidade;Quantidade\r\n'+lin.map(l=>l.join(';')).join('\r\n')
     +(verif.length?'\r\n'+verif.map(v=>'Verificar;'+v+';;').join('\r\n'):'');
   $('dlg').showModal();
