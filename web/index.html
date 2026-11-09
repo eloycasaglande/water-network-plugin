@@ -85,6 +85,7 @@ h3{margin:10px 0 0;font-size:14px}
   <button data-cmd="IMPRIMIRPB" title="Tons de cinza bem separados e contorno, para impressora preto e branco">Imprimir P&amp;B</button>
   <span class="sep"></span>
   <button data-cmd="DESFAZER">Desfazer</button>
+  <button data-cmd="APAGAR" title="Apaga o que está selecionado (tecla Delete)">Apagar</button>
   <button data-cmd="LIMPAR">Limpar</button>
   <button data-cmd="SALVAR" title="Salva neste navegador">Salvar</button>
   <button data-cmd="ABRIR" title="Abre o que foi salvo neste navegador">Abrir</button>
@@ -151,6 +152,7 @@ h3{margin:10px 0 0;font-size:14px}
     <tr><td><b>IMPRIMIR</b></td><td>Imprime o que está na tela, do jeito que está (mesma vista e zoom), sem a grade, pela janela de impressão do computador. Retrato ou paisagem é escolhido pela proporção da tela e a imagem é ajustada à folha. Enquadre a vista antes (Zoom ext., Iso, Planta...).</td></tr>
     <tr><td><b>IMPRIMIRPB</b></td><td>Igual ao IMPRIMIR, mas para impressora preto e branco: cada tipo de peça sai num tom de cinza bem diferente (tubo cinza médio, peças claras, registro bem escuro, ventosa quase branca...) e com contorno preto, para distinguir bem no papel A4.</td></tr>
     <tr><td><b>DESFAZER</b> (ou <b>U</b>)</td><td>Remove o último elemento criado.</td></tr>
+    <tr><td><b>SELEÇÃO</b> / <b>APAGAR</b></td><td>Com nenhum comando em andamento, clique num tubo ou peça para selecioná-lo (fica laranja) ou segure o botão esquerdo e arraste um retângulo: da esquerda para a direita pega só o que ficar inteiro dentro; da direita para a esquerda pega tudo que encostar. Shift/Ctrl soma à seleção. <b>Delete</b> (ou o botão Apagar) apaga o selecionado e o que estiver ligado depois dele; Esc limpa a seleção.</td></tr>
     <tr><td><b>LIMPAR</b></td><td>Apaga toda a rede (pede confirmação).</td></tr>
     <tr><td><b>SALVAR</b> / <b>ABRIR</b></td><td>Salva a rede neste navegador (fica guardada mesmo fechando a página) e abre de novo o que foi salvo. A rede também é guardada automaticamente a cada alteração e volta quando você reabre a página.</td></tr>
     <tr><td><b>EXPORTAR</b> / <b>IMPORTAR</b></td><td>Baixa a rede em um arquivo .json (para guardar ou enviar) e abre um arquivo .json.</td></tr>
@@ -322,7 +324,16 @@ function luzes(sc){
   const sol=new THREE.DirectionalLight(0xffffff,1.4); sol.position.set(-6,-9,12); sc.add(sol);
 }
 luzes(scene);
-const grid=new THREE.GridHelper(20000,200,0x9aa6b2,0xd0d6dd); grid.rotation.x=Math.PI/2; scene.add(grid);
+const grid=new THREE.GridHelper(20000,200,0x9aa6b2,0xd0d6dd); grid.rotation.x=Math.PI/2; grid.position.z=0.05;
+for(const m of [].concat(grid.material)){m.transparent=true;m.opacity=.4;m.depthWrite=false}
+const folha=new THREE.Mesh(new THREE.PlaneGeometry(20000,20000),new THREE.MeshBasicMaterial({color:0xcfd8e3,transparent:true,opacity:.28,side:THREE.DoubleSide,depthWrite:false}));
+folha.renderOrder=-1;
+const plano=new THREE.Group(); plano.add(folha,grid); plano.position.z=-15; scene.add(plano);
+// o plano fica logo abaixo da rede (os tubos ficam SOBRE ele, nao cortados ao meio)
+function ajustaPlano(){
+  const box=new THREE.Box3().setFromObject(raiz);
+  plano.position.z=box.isEmpty()?-15:box.min.z-0.3;
+}
 const raiz=new THREE.Group(); scene.add(raiz);
 const controls=new OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;
@@ -789,7 +800,7 @@ function construir(cmd,src){
 }
 
 /* ---------- Modelo ---------- */
-const rede=[]; let nextId=1;
+const rede=[]; let nextId=1; const sel=new Set();
 const byId=id=>rede.find(e=>e.id===id);
 const nomeEl=e=>e.nome;
 const V=a=>new V3(a[0],a[1],a[2]);
@@ -808,14 +819,15 @@ function adicionar(cmd){
   const e=construir(cmd,src);
   e.grupo.userData.id=e.id;
   rede.push(e); raiz.add(e.grupo);
+  ajustaPlano();
   if(typeof aoMudar==='function') aoMudar();
   return e;
 }
 function descarta(g){g.traverse(o=>{if(o.geometry&&!Object.values(geoCache).includes(o.geometry))o.geometry.dispose()})}
 function desfazer(){
   const e=rede.pop(); if(!e) return;
-  raiz.remove(e.grupo); descarta(e.grupo);
-  nextId=e.id;
+  pintaSel(e,false); raiz.remove(e.grupo); descarta(e.grupo); ajustaPlano();
+  nextId=e.id; sel.delete(e.id);
   if(typeof aoMudar==='function') aoMudar();
 }
 function limpar(){while(rede.length)desfazer();nextId=1}
@@ -874,12 +886,14 @@ inp.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
     e.preventDefault(); const t=inp.value; inp.value='';
     if(pend) resolveTexto(t); else if(!ocupado) executarTexto(t);
-  } else if(e.key==='Escape') cancela();
+  } else if(e.key==='Escape'){if(pend)cancela();else limpaSel()}
+  else if(e.key==='Delete'&&!pend&&!ocupado&&!inp.value){e.preventDefault();apagarSel()}
   else if(e.key==='z'&&e.ctrlKey&&pend&&(pend.o.kw||[]).includes('Desfazer')){e.preventDefault();resolveTexto('Desfazer')}
 });
 addEventListener('keydown',e=>{
   if(e.target===inp||e.target.closest('dialog')) return;
-  if(e.key==='Escape') cancela();
+  if(e.key==='Escape'){if(pend)cancela();else limpaSel()}
+  else if(e.key==='Delete'&&!pend&&!ocupado){e.preventDefault();apagarSel()}
   else if(e.key==='F8'){e.preventDefault();alterna('orto')}
   else if(e.key==='F3'){e.preventDefault();alterna('snap')}
   else if(e.ctrlKey&&e.key==='z'&&pend&&(pend.o.kw||[]).includes('Desfazer')){e.preventDefault();resolveTexto('Desfazer')}
@@ -940,6 +954,14 @@ function dirDireta(){ // direcao usada ao digitar so uma distancia
 }
 canvas.addEventListener('pointermove',ev=>{
   const b=canvas.getBoundingClientRect();
+  if(!pend&&down&&down.b===0&&(ev.buttons&1)){ // arrastando = retangulo de selecao
+    const x0=down.x-b.left,y0=down.y-b.top,x1=ev.clientX-b.left,y1=ev.clientY-b.top,r=$('selrect');
+    if(Math.hypot(x1-x0,y1-y0)>4){
+      r.classList.remove('hide');r.style.borderStyle=x1<x0?'solid':'dashed';
+      Object.assign(r.style,{left:Math.min(x0,x1)+'px',top:Math.min(y0,y1)+'px',width:Math.abs(x1-x0)+'px',height:Math.abs(y1-y0)+'px'});
+    }
+    return;
+  }
   if(pend&&pend.o.tipo==='tela'){
     if(pend.o.sx0!=null){
       const x0=pend.o.sx0,y0=pend.o.sy0,x1=ev.clientX-b.left,y1=ev.clientY-b.top,r=$('selrect');
@@ -965,7 +987,8 @@ let down=null;
 canvas.addEventListener('pointerdown',ev=>{down={x:ev.clientX,y:ev.clientY,b:ev.button}});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('pointerup',ev=>{
-  if(!down) return; const moved=Math.hypot(ev.clientX-down.x,ev.clientY-down.y)>4, bt=down.b; down=null;
+  if(!down) return; const d0=down, moved=Math.hypot(ev.clientX-down.x,ev.clientY-down.y)>4, bt=down.b; down=null;
+  if(!pend&&bt===0){$('selrect').classList.add('hide');if(moved)selecionaRect(d0,ev);else selecionaClique(ev);return}
   if(moved||!pend) return;
   const o=pend.o, b=canvas.getBoundingClientRect(), sx=ev.clientX-b.left, sy=ev.clientY-b.top;
   if(bt===2){msg((o.msg||'')+' ↵','eco');resolveTexto('');return} // botao direito = Enter
@@ -982,6 +1005,69 @@ canvas.addEventListener('pointerup',ev=>{
     if(o.tipo==='num') fecha({t:'num',v:r.p.distanceTo(o.base)}); else fecha({t:'pt',v:r.p});
   }
 });
+/* ---------- Selecao (clique ou arrastar) e exclusao ---------- */
+const matSel=new Map();
+function matSelH(m){
+  let h=matSel.get(m);
+  if(!h){h=m.clone();h.userData=Object.assign({},m.userData,{hi:m});if(h.emissive){h.emissive.set(0xff8a00);h.emissiveIntensity=.6}matSel.set(m,h)}
+  return h;
+}
+function pintaSel(e,on){
+  e.grupo.traverse(o=>{
+    if(!o.isMesh) return;
+    o.userData.sel=on; atualizaMat(o);
+  });
+}
+// material do mesh = original, com realce azul (mouse em cima) ou laranja (selecionado; tem prioridade)
+function atualizaMat(o){
+  if(!o.userData.m0) o.userData.m0=o.material;
+  const b=o.userData.m0;
+  o.material=o.userData.sel?matSelH(b):(o.userData.hv?hiMat(b):b);
+}
+function limpaSel(){for(const id of sel){const e=byId(id);if(e)pintaSel(e,false)}sel.clear()}
+function alternaSel(e,soAdd){
+  if(sel.has(e.id)&&!soAdd){sel.delete(e.id);pintaSel(e,false)}else{sel.add(e.id);pintaSel(e,true)}
+}
+function infoSel(){if(sel.size)msg(sel.size+' selecionado(s). Delete = apagar, Esc = limpar seleção.','eco')}
+function selecionaClique(ev){
+  mouseRay(ev); const hits=ray.intersectObjects(raiz.children,true); let el=null;
+  for(const h of hits){let g=h.object;while(g&&g.userData.id==null)g=g.parent;if(g){el=byId(g.userData.id);break}}
+  const mais=ev.shiftKey||ev.ctrlKey;
+  if(!el){if(!mais)limpaSel();return}
+  if(!mais){limpaSel();alternaSel(el,true)}
+  else alternaSel(el);
+  infoSel();
+}
+function selecionaRect(d0,ev){
+  const b=canvas.getBoundingClientRect();
+  const xa=Math.min(d0.x,ev.clientX),xb=Math.max(d0.x,ev.clientX),ya=Math.min(d0.y,ev.clientY),yb=Math.max(d0.y,ev.clientY);
+  const janela=ev.clientX>=d0.x; // esquerda->direita: so o que esta inteiro dentro; direita->esquerda: o que encosta
+  if(!(ev.shiftKey||ev.ctrlKey)) limpaSel();
+  const box=new THREE.Box3(), q=new V3();
+  for(const e of rede){
+    box.setFromObject(e.grupo); if(box.isEmpty()) continue;
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,atras=false;
+    for(const X of [box.min.x,box.max.x])for(const Y of [box.min.y,box.max.y])for(const Z of [box.min.z,box.max.z]){
+      q.set(X,Y,Z).project(camera); if(q.z>1){atras=true}
+      const sx=(q.x+1)/2*b.width+b.left,sy=(1-q.y)/2*b.height+b.top;
+      x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy);y1=Math.max(y1,sy);
+    }
+    if(atras) continue;
+    const ok=janela?(x0>=xa&&x1<=xb&&y0>=ya&&y1<=yb):(x1>=xa&&x0<=xb&&y1>=ya&&y0<=yb);
+    if(ok&&!sel.has(e.id)) alternaSel(e,true);
+  }
+  infoSel();
+}
+function apagarSel(){
+  if(!sel.size){msg('Nada selecionado. Clique num elemento ou arraste um retângulo para selecionar.','warn');return}
+  const ids=new Set(sel); let mudou=true;
+  while(mudou){mudou=false;for(const e of rede)if(!ids.has(e.id)&&e.from&&ids.has(e.from.id)){ids.add(e.id);mudou=true}}
+  const extra=ids.size-sel.size;
+  if(extra>0&&!confirm('Apagar também '+extra+' elemento(s) ligado(s) depois do selecionado?')) return;
+  for(let i=rede.length-1;i>=0;i--) if(ids.has(rede[i].id)){const e=rede[i];pintaSel(e,false);rede.splice(i,1);raiz.remove(e.grupo);descarta(e.grupo)}
+  sel.clear(); ajustaPlano(); aoMudar();
+  msg(ids.size+' elemento(s) apagado(s).','ok');
+}
 controls.mouseButtons={LEFT:-1,MIDDLE:THREE.MOUSE.PAN,RIGHT:THREE.MOUSE.ROTATE};
 controls.zoomToCursor=true;
 
@@ -1162,7 +1248,7 @@ function cmdLimpar(){if(!rede.length||confirm('Apagar toda a rede?')){limpar();m
 const COMANDOS={
   REDE:cmdRede, CONTINUAR:cmdContinuar, QUANT:cmdQuant, IMPRIMIR:cmdImprimir, IMPRIMIRPB:cmdImprimirPB,
   VISTA:()=>vista('iso'), PLANTA:()=>vista('planta'), FRENTE:()=>vista('frente'), ZOOM:()=>vista('fit'),
-  DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, SALVAR:salvarLocal, ABRIR:abrirLocal, EXPORTAR:exportarArquivo, IMPORTAR:()=>$('file').click()
+  DESFAZER:cmdDesfazerGeral, U:cmdDesfazerGeral, LIMPAR:cmdLimpar, APAGAR:apagarSel, SALVAR:salvarLocal, ABRIR:abrirLocal, EXPORTAR:exportarArquivo, IMPORTAR:()=>$('file').click()
 };
 async function executar(nome){
   if(ocupado){msg('Termine ou cancele (Esc) o comando atual.','warn');return}
@@ -1234,13 +1320,13 @@ function imprimir(pb){
   const esc=Math.min(3,Math.max(1,2400/Math.max(fw,fh)));      // ~2400 px no lado maior
   const W=Math.round(fw*esc), H=Math.round(fh*esc);
   const bgAnt=scene.background; scene.background=new THREE.Color(0xffffff);
-  grid.visible=false; guia.visible=false; marca.visible=false;
+  limpaSel(); plano.visible=false; guia.visible=false; marca.visible=false;
   const desfaz=pb?aplicaPB():null;
   renderer.setPixelRatio(1); renderer.setSize(W,H,false);
   renderer.render(scene,camera);
   const url=renderer.domElement.toDataURL('image/png');
   if(desfaz) desfaz();
-  scene.background=bgAnt; grid.visible=true;
+  scene.background=bgAnt; plano.visible=true;
   renderer.setPixelRatio(Math.min(devicePixelRatio,2)); ajusta();
   const f=document.createElement('iframe'); f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
   f.srcdoc=`<!doctype html><html><head><meta charset="utf-8"><title>RedesAgua</title><style>
@@ -1475,7 +1561,7 @@ const hov=$('hov'); let hovId=null, hovRaf=0, hovEv=null; const matHi=new Map();
 function hiMat(m){let h=matHi.get(m);if(!h){h=m.clone();h.emissive=new THREE.Color(0x2f6fb0);h.emissiveIntensity=0.55;matHi.set(m,h)}return h}
 function pinta(id,on){
   const e=byId(id); if(!e) return;
-  e.grupo.traverse(o=>{if(!o.isMesh)return;if(on){o.userData.m0=o.userData.m0||o.material;o.material=hiMat(o.userData.m0)}else if(o.userData.m0)o.material=o.userData.m0});
+  e.grupo.traverse(o=>{if(!o.isMesh)return;o.userData.hv=on;atualizaMat(o)});
 }
 function textoPeca(e){
   const dn=e.dn2?`DN${e.dn} × DN${e.dn2}`:`DN${e.dn}`;
